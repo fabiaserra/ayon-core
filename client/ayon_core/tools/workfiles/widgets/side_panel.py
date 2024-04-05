@@ -1,3 +1,5 @@
+import os
+import platform
 import datetime
 
 from qtpy import QtWidgets, QtCore
@@ -155,9 +157,75 @@ class SidePanelWidget(QtWidgets.QWidget):
             "<b>Modified:</b>",
             modification_time.strftime(datetime_format)
         )
+        username = self._get_user_name(filepath)
+        if username:
+            lines += (
+                "<b>User:</b>",
+                username,
+            )
+
+        dcc_version = self._get_dcc_version(filepath)
+        if dcc_version:
+            lines += (
+                "<b>DCC:</b>",
+                dcc_version,
+            )
+
         self._orig_note = note
         self._note_input.setPlainText(note)
 
         # Set as empty string
         self._details_input.setPlainText("")
         self._details_input.appendHtml("<br>".join(lines))
+
+    def _get_user_name(self, file):
+        """Get user name from file path"""
+        # Only run on Unix because pwd module is not available on Windows.
+        # NOTE: we tried adding "win32security" module but it was not working
+        # on all hosts so we decided to just support Linux until migration
+        # to Ayon
+        if platform.system().lower() == "windows":
+            return None
+        import pwd
+
+        filestat = os.stat(file)
+        return pwd.getpwuid(filestat.st_uid).pw_name
+
+    def _get_nuke_version_from_file(self, filepath):
+        with open(filepath, "r") as file:
+            file_content = file.readlines()
+
+        # Find the line that includes the version
+        # i.e "version 14.0 v3")
+        prefix = "version "
+        for line in file_content:
+            if line.startswith(prefix):
+                return line[len(prefix):]
+
+        return "<version not found>"
+
+    def _get_houdini_version_from_file(self, filepath):
+        with open(filepath, "rb") as file:
+            file_content = file.readlines()
+
+        # Find the line that contains the HIP version
+        # i.e. "set -g _HIP_SAVEVERSION = '19.5.640'"
+        prefix = "set -g _HIP_SAVEVERSION = "
+        for line in file_content:
+            # .hip files need to be read as bytes strings
+            # but not all lines can be decoded so we just catch
+            # the exception and ignore
+            try:
+                line_str = line.decode("utf-8")
+            except UnicodeDecodeError:
+                continue
+            if line_str.startswith(prefix):
+                return line_str[len(prefix):].replace("'", "")
+
+        return "<version not found>"
+
+    def _get_dcc_version(self, filepath):
+        if filepath.endswith(".nk"):
+            return f"Nuke {self._get_nuke_version_from_file(filepath)}"
+        elif filepath.endswith(".hip"):
+            return f"Houdini {self._get_houdini_version_from_file(filepath)}"

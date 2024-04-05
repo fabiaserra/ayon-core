@@ -65,7 +65,8 @@ DEFAULT_LOADER_PLUGINS_SETTINGS = {
         "node_name_template": "{class_name}_{ext}",
         "options_defaults": {
             "start_at_workfile": True,
-            "add_retime": True
+            "add_retime": True,
+            "load_deep": False,
         }
     }
 }
