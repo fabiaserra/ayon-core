@@ -87,7 +87,7 @@ def payload_submit(
         "AYON_APP_NAME",
         "OCIO",
         "USER",
-        "AYON_SG_USER",
+        "AYON_SG_USERNAME",
     ]
 
     environment = dict(

@@ -402,7 +402,7 @@ def publish_version(
         "AYON_FOLDER_PATH": folder_path,
         "AYON_TASK_NAME": task_name,
         "AYON_WORKDIR": os.path.dirname(source_path),
-        "AYON_SG_USER": username,
+        "AYON_SG_USERNAME": username,
         "AYON_PUBLISH_JOB": "1",
         "AYON_RENDER_JOB": "0",
         "AYON_REMOTE_JOB": "0",
