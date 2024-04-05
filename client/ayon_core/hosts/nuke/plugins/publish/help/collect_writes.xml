@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<root>
+<error id="no_render_files">
+<title>Collect Writes</title>
+<description>
+## Missing Frames!
+
+Collect writes plugin could not find expected rendered files.
+Expected to find rendered files from {write_node_name} in output path location:
+
+{output_path}
+
+### How to repair?
+
+- Check {write_node_name} output exists
+- Correct write path if write path is wrong
+- Submit render and try publishing again once render completes and is QC'd
+
+</description>
+<detail>
+### __Detailed Info__ (optional)
+
+This error is shown when there are no files on disk matching the output path
+given by the publishing target write node
+</detail>
+</error>
+</root>
