@@ -340,9 +340,9 @@ class ExtractThumbnail(pyblish.api.InstancePlugin):
                 # to be published locally
                 continue
 
-            valid = "review" in tags or "thumb-nuke" in tags
-            if not valid:
-                continue
+            # valid = "review" in tags or "thumb-nuke" in tags
+            # if not valid:
+                # continue
 
             if not repre.get("files"):
                 self.log.debug((
@@ -412,7 +412,7 @@ class ExtractThumbnail(pyblish.api.InstancePlugin):
                 display=repre_display or oiio_default_display,
                 view=repre_view or oiio_default_view,
                 target_colorspace=oiio_default_colorspace,
-                additional_command_args=resolution_arg,
+                additional_pre_command_args=resolution_arg,
                 logger=self.log,
             )
         except Exception:

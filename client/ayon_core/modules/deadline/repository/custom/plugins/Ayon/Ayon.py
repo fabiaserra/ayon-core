@@ -95,12 +95,12 @@ class AyonDeadlinePlugin(DeadlinePlugin):
         if platform.system().lower() == "darwin":
             exe_list = exe_list.replace("\\ ", " ")
 
-        expanded_paths = []
-        for path in exe_list.split(";"):
-            if path.startswith("~"):
-                path = os.path.expanduser(path)
-            expanded_paths.append(path)
-        exe = FileUtils.SearchFileList(";".join(expanded_paths))
+        # expanded_paths = []
+        # for path in exe_list.split(";"):
+        #     if path.startswith("~"):
+        #         path = os.path.expanduser(path)
+        #     expanded_paths.append(path)
+        exe = FileUtils.SearchFileList(exe_list)
 
         if exe == "":
             self.FailRender(

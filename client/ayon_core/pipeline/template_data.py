@@ -1,7 +1,9 @@
 import ayon_api
 
 from ayon_core.settings import get_studio_settings
+from ayon_core.lib import prepare_template_data
 from ayon_core.lib.local_settings import get_ayon_username
+from ayon_core.pipeline import context_tools
 
 
 def get_general_template_data(settings=None):
@@ -181,6 +183,20 @@ def get_template_data(
                 project_entity, task_entity
             ))
 
+        ### Starts Alkemy-X Override ###
+        # Set hierarchy context data to anatomy so we can use it on templates
+        hierarchy_env = context_tools.get_hierarchy_env(project_entity, folder_entity)
+        hierarchy_pairs = {
+            "episode": hierarchy_env.get("EPISODE") or "",
+            "seq": hierarchy_env.get("SEQ") or "",
+            "shot": hierarchy_env.get("SHOT") or "",
+            "shotnum": hierarchy_env.get("SHOTNUM") or "",
+            "asset_type": hierarchy_env.get("ASSET_TYPE") or "",
+        }
+        hierarchy_data = prepare_template_data(hierarchy_pairs)
+        template_data.update(hierarchy_data)
+        ### Ends Alkemy-X Override ###
+
     if host_name:
         template_data["app"] = host_name
 
@@ -219,7 +235,17 @@ def get_template_data_with_names(
         folder_entity = ayon_api.get_folder_by_path(
             project_name,
             folder_path,
-            fields={"id", "path", "folderType"}
+            ### Starts Alkemy-X Override ###
+            # Add some extra fields required for being able to call
+            # context_tools.get_hierarchy_env on get_template_data
+            fields=[
+                "name",
+                "data.parents",
+                "data.tasks",
+                "data.visualParent",
+                "data.sgEntityType"
+            ]
+            ### Ends Alkemy-X Override ###
         )
         if task_name and folder_entity:
             task_entity = ayon_api.get_task_by_name(

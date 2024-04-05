@@ -49,14 +49,26 @@ class ExtractOTIOTrimmingVideo(publish.Extractor):
             new_file = self._ffmpeg_trim_seqment(
                 input_file_path, otio_trim_range)
 
+            ### Starts Alkemy-X Override ###
+            # If extension is mxf change it to mov as there's a bug in
+            # Nuke that reads the trimmed mxf in a different resolution
+            # showing a green edge at the edge of the frame
+            _, ext = os.path.splitext(input_file_path)
+            if ext == ".mxf":
+                _repre["name"] = "mov"
+                _repre["ext"] = "mov"
+            ### Ends Alkemy-X Override ###
+
             # prepare new representation data
             repre_data = deepcopy(_repre)
-            # remove tags as we dont need them
-            repre_data.pop("tags")
+            ### Starts Alkemy-X Override ###
+            # remove trim tag
+            repre_data["tags"].remove("trim")
+            ### Ends Alkemy-X Override ###
             repre_data["stagingDir"] = self.staging_dir
             repre_data["files"] = new_file
 
-            # romove `trim` tagged representation
+            # remove `trim` tagged representation
             representations.remove(_repre)
             representations.append(repre_data)
             self.log.debug(repre_data)
@@ -86,7 +98,8 @@ class ExtractOTIOTrimmingVideo(publish.Extractor):
         video_path = input_file_path
         frame_start = otio_range.start_time.value
         input_fps = otio_range.start_time.rate
-        frame_duration = otio_range.duration.value - 1
+        # Duration is end - start + 1
+        frame_duration = otio_range.duration.value
         sec_start = frames_to_seconds(frame_start, input_fps)
         sec_duration = frames_to_seconds(frame_duration, input_fps)
 
@@ -121,6 +134,13 @@ class ExtractOTIOTrimmingVideo(publish.Extractor):
         """
         basename = os.path.basename(file_path)
         name, ext = os.path.splitext(basename)
+        ### Starts Alkemy-X Override ###
+        # If extension is mxf change it to mov as there's a bug in
+        # Nuke that reads the trimmed mxf in a different resolution
+        # showing a green edge at the edge of the frame
+        if ext == ".mxf":
+            ext = ".mov"
+        ### Ends Alkemy-X Override ###
 
         output_file = "{}_{}{}".format(
             name,

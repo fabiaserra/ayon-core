@@ -114,6 +114,13 @@ class CollectMantraROPRenderProducts(pyblish.api.InstancePlugin):
         instance.data["colorspaceDisplay"] = colorspace_data["display"]
         instance.data["colorspaceView"] = colorspace_data["view"]
 
+        ### Starts Alkemy-X Override ###
+        # Hard-code review so it generates a review and uploads it
+        # to SG
+        instance.data["review"] = True
+        # instance.data["families"].append("review")
+        ### Ends Alkemy-X Override ###
+
     def get_render_product_name(self, prefix, suffix):
         product_name = prefix
         if suffix:

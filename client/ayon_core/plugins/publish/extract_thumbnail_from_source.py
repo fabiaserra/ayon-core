@@ -23,6 +23,7 @@ from ayon_core.lib import (
 
     run_subprocess,
 )
+from ayon_core.lib.transcoding import IMAGE_EXTENSIONS
 
 
 class ExtractThumbnailFromSource(pyblish.api.InstancePlugin):
@@ -44,8 +45,13 @@ class ExtractThumbnailFromSource(pyblish.api.InstancePlugin):
         )
         thumbnail_source = instance.data.get("thumbnailSource")
         if not thumbnail_source:
-            self.log.debug("Thumbnail source not filled. Skipping.")
-            return
+            self.log.debug("Thumbnail source not filled, checking repres")
+            thumbnail_source = self._get_thumbnail_source_from_repres(instance)
+            if thumbnail_source:
+                self.log.debug("Using repre '%s' as thumbnail", thumbnail_source)
+            else:
+                self.log.debug("Couldn't find any repre that could be used as thumbnail source, skipping.")
+                return
 
         # Check if already has thumbnail created
         if self._instance_has_thumbnail(instance):
@@ -142,6 +148,19 @@ class ExtractThumbnailFromSource(pyblish.api.InstancePlugin):
             if repre["name"] == "thumbnail":
                 return True
         return False
+
+    def _get_thumbnail_source_from_repres(self, instance):
+        """Try get one of the representations as source for thumbnail
+
+        It simply returns the first repre that's a single file and it's an image extension.
+        NOTE: this works well for 'textures' publishes
+        """
+        for repre in instance.data.get("representations", []):
+            if f".{repre['ext']}" in IMAGE_EXTENSIONS and \
+                    not isinstance(repre["files"], (list, tuple)):
+                return os.path.join(
+                    os.path.normpath(repre["stagingDir"]), repre["files"]
+                )
 
     def create_thumbnail_oiio(self, src_path, dst_path):
         self.log.debug("Outputting thumbnail with OIIO: {}".format(dst_path))

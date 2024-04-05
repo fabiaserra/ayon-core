@@ -58,7 +58,10 @@ class LinkAsGroup(load.LoaderPlugin):
             "author",
             "fps"
         ]:
-            data_imprint[k] = version_attributes[k]
+            ### Starts Alkemy-X Override ###
+            # Fallback to 0 value in case handle attrs don't exist on ingest
+            data_imprint.update({k: version_attributes.get(k, 0)})
+            ### Ends Alkemy-X Override ###
 
         # group context is set to precomp, so back up one level.
         nuke.endGroup()

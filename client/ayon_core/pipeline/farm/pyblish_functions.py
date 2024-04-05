@@ -1,10 +1,11 @@
+import attr
 import os
 import copy
 import re
 import warnings
+import datetime
 from copy import deepcopy
 
-import attr
 import ayon_api
 import pyblish.api
 import clique
@@ -123,7 +124,7 @@ def get_time_data_from_instance_or_context(instance):
     )
 
 
-def get_transferable_representations(instance):
+def get_transferable_representations(instance, log=None):
     """Transfer representations from original instance.
 
     This will get all representations on the original instance that
@@ -137,6 +138,9 @@ def get_transferable_representations(instance):
         list of dicts: List of transferable representations.
 
     """
+    if log is None:
+        log = Logger.getLogger(__name__)
+
     anatomy = instance.context.data["anatomy"]  # type: Anatomy
     to_transfer = []
 
@@ -155,7 +159,6 @@ def get_transferable_representations(instance):
             try:
                 trans_rep["stagingDir"] = remap_source(staging_dir, anatomy)
             except ValueError:
-                log = Logger.get_logger("farm_publishing")
                 log.warning(
                     ("Could not find root path for remapping \"{}\". "
                      "This may cause issues on farm.").format(staging_dir))
@@ -165,7 +168,8 @@ def get_transferable_representations(instance):
 
 
 def create_skeleton_instance(
-        instance, families_transfer=None, instance_transfer=None):
+    instance, families_transfer=None, instance_transfer=None, log=None
+):
     # type: (pyblish.api.Instance, list, dict) -> dict
     """Create skeleton instance from original instance data.
 
@@ -187,7 +191,8 @@ def create_skeleton_instance(
         dict: Dictionary with skeleton instance data.
 
     """
-    # list of family names to transfer to new family if present
+    if not log:
+        log = Logger.getLogger(__name__)
 
     context = instance.context
     data = instance.data.copy()
@@ -211,15 +216,16 @@ def create_skeleton_instance(
     if success:
         source = rootless_path
     else:
-        # `rootless_path` is not set to `source` if none of roots match
-        log = Logger.get_logger("farm_publishing")
-        log.warning(("Could not find root path for remapping \"{}\". "
-                     "This may cause issues.").format(source))
+        log.warning(
+            "Could not find root path for remapping \"{}\". "
+            "This may cause issues.".format(source)
+        )
 
-    product_type = ("render"
-              if "prerender.farm" not in instance.data["families"]
-              else "prerender")
-    families = [product_type]
+    # family = ("render"
+    #           if "prerender" not in instance.data["families"]
+    #           else "prerender")
+    # families = [family]
+    families = []
 
     # pass review to families if marked as review
     if data.get("review"):
@@ -301,7 +307,7 @@ def prepare_representations(skeleton_data, exp_files, anatomy, aov_filter,
                             skip_integration_repre_list,
                             do_not_add_review,
                             context,
-                            color_managed_plugin):
+                            color_managed_plugin, log=None):
     """Create representations for file sequences.
 
     This will return representations of expected files if they are not
@@ -325,7 +331,8 @@ def prepare_representations(skeleton_data, exp_files, anatomy, aov_filter,
     host_name = os.environ.get("AYON_HOST_NAME", "")
     collections, remainders = clique.assemble(exp_files)
 
-    log = Logger.get_logger("farm_publishing")
+    if not log:
+        log = Logger.getLogger(__name__)
 
     # create representation for every collected sequence
     for collection in collections:
@@ -367,10 +374,27 @@ def prepare_representations(skeleton_data, exp_files, anatomy, aov_filter,
         if skeleton_data.get("slate"):
             frame_start -= 1
 
+        ### Starts Alkemy-X Override ###
+        # Add override to support representations with the same extension
+
+        # Make sure we don't have duplicate representation names
+        repre_name = ext
+
+        # We need to hard-code the case of the collection ending with _fr
+        # as we can't be certain that clique.assemble always returns the
+        # collections ordered so the `exr` that's from working resolution
+        # always comes first
+        if "_fr" in collection.head:
+            repre_name = "{}_fr".format(ext)
+            preview = False
+        elif "h264" in collection.head:
+            repre_name = "h264"
+
         # explicitly disable review by user
         preview = preview and not do_not_add_review
         rep = {
-            "name": ext,
+            "name": repre_name,
+        ### Ends Alkemy-X Override ###
             "ext": ext,
             "files": [os.path.basename(f) for f in list(collection)],
             "frameStart": frame_start,
@@ -378,7 +402,7 @@ def prepare_representations(skeleton_data, exp_files, anatomy, aov_filter,
             # If expectedFile are absolute, we need only filenames
             "stagingDir": staging,
             "fps": skeleton_data.get("fps"),
-            "tags": ["review"] if preview else [],
+            "tags": ["review", "shotgridreview"] if preview else [],
         }
 
         # poor man exclusion
@@ -426,10 +450,18 @@ def prepare_representations(skeleton_data, exp_files, anatomy, aov_filter,
             host_name, aov_filter, remainder
         )
         preview = preview and not do_not_add_review
+
+        ### Starts Alkemy-X Override ###
+        # Only add 'review' and 'shotgridreview' tags for video files
+        # and single exr frames
+        if ext not in {"mp4", "mov", "mxf", "exr"}:
+            preview = False
+        ### Ends Alkemy-X Override ###
+
         if preview:
             rep.update({
                 "fps": skeleton_data.get("fps"),
-                "tags": ["review"]
+                "tags": ["review", "shotgridreview"]
             })
             skeleton_data["families"] = \
                 _add_review_families(skeleton_data["families"])
@@ -457,7 +489,7 @@ def prepare_representations(skeleton_data, exp_files, anatomy, aov_filter,
 
 def create_instances_for_aov(instance, skeleton, aov_filter,
                              skip_integration_repre_list,
-                             do_not_add_review):
+                             do_not_add_review, log=None):
     """Create instances from AOVs.
 
     This will create new pyblish.api.Instances by going over expected
@@ -473,10 +505,11 @@ def create_instances_for_aov(instance, skeleton, aov_filter,
             expected files.
 
     """
-    # we cannot attach AOVs to other products as we consider every
-    # AOV product of its own.
+    if not log:
+        log = Logger.getLogger(__name__)
 
-    log = Logger.get_logger("farm_publishing")
+    # we cannot attach AOVs to other subsets as we consider every
+    # AOV subset of its own.
     additional_color_data = {
         "renderProducts": instance.data["renderProducts"],
         "colorspaceConfig": instance.data["colorspaceConfig"],
@@ -517,8 +550,10 @@ def create_instances_for_aov(instance, skeleton, aov_filter,
     )
 
 
-def _create_instances_for_aov(instance, skeleton, aov_filter, additional_data,
-                              skip_integration_repre_list, do_not_add_review):
+def _create_instances_for_aov(
+    instance, skeleton, aov_filter, additional_data,
+    skip_integration_repre_list, do_not_add_review, log=None
+):
     """Create instance for each AOV found.
 
     This will create new instance for every AOV it can detect in expected
@@ -548,7 +583,9 @@ def _create_instances_for_aov(instance, skeleton, aov_filter, additional_data,
     s_product_name = skeleton["productName"]
     cameras = instance.data.get("cameras", [])
     exp_files = instance.data["expectedFiles"]
-    log = Logger.get_logger("farm_publishing")
+
+    if not log:
+        log = Logger.getLogger(__name__)
 
     instances = []
     # go through AOVs in expected files
@@ -571,16 +608,16 @@ def _create_instances_for_aov(instance, skeleton, aov_filter, additional_data,
             ext = cols[0].tail.lstrip(".")
             col = list(cols[0])
 
-        # create product name `<product type><Task><Product name>`
+        # create subset name `familyTaskSubset_AOV`
         # TODO refactor/remove me
-        product_type = skeleton["productType"]
-        if not s_product_name.startswith(product_type):
-            group_name = '{}{}{}{}{}'.format(
-                product_type,
-                task[0].upper(), task[1:],
-                s_product_name[0].upper(), s_product_name[1:])
-        else:
-            group_name = s_product_name
+        # family = skeleton["family"]
+        # if not subset.startswith(family):
+        #     group_name = '{}{}{}{}{}'.format(
+        #         family,
+        #         task[0].upper(), task[1:],
+        #         subset[0].upper(), subset[1:])
+        # else:
+        group_name = s_product_name
 
         # if there are multiple cameras, we need to add camera name
         expected_filepath = col[0] if isinstance(col, (list, tuple)) else col
@@ -657,7 +694,7 @@ def _create_instances_for_aov(instance, skeleton, aov_filter, additional_data,
             # If expectedFile are absolute, we need only filenames
             "stagingDir": staging,
             "fps": new_instance.get("fps"),
-            "tags": ["review"] if preview else [],
+            "tags": ["review", "shotgridreview"] if preview else [],
             "colorspaceData": {
                 "colorspace": colorspace,
                 "config": {
@@ -750,7 +787,7 @@ def get_resources(project_name, version_entity, extension=None):
     return resources
 
 
-def create_skeleton_instance_cache(instance):
+def create_skeleton_instance_cache(instance, log=None):
     # type: (pyblish.api.Instance, list, dict) -> dict
     """Create skeleton instance from original instance data.
 
@@ -773,6 +810,9 @@ def create_skeleton_instance_cache(instance):
     data = instance.data.copy()
     anatomy = instance.context.data["anatomy"]  # type: Anatomy
 
+    if not log:
+        log = Logger.getLogger(__name__)
+
     # get time related data from instance (or context)
     time_data = get_time_data_from_instance_or_context(instance)
 
@@ -792,7 +832,6 @@ def create_skeleton_instance_cache(instance):
         source = rootless_path
     else:
         # `rootless_path` is not set to `source` if none of roots match
-        log = Logger.get_logger("farm_publishing")
         log.warning(("Could not find root path for remapping \"{}\". "
                      "This may cause issues.").format(source))
 
@@ -838,7 +877,7 @@ def create_skeleton_instance_cache(instance):
     return instance_skeleton_data
 
 
-def prepare_cache_representations(skeleton_data, exp_files, anatomy):
+def prepare_cache_representations(skeleton_data, exp_files, anatomy, log=None):
     """Create representations for file sequences.
 
     This will return representations of expected files if they are not
@@ -857,7 +896,8 @@ def prepare_cache_representations(skeleton_data, exp_files, anatomy):
     representations = []
     collections, remainders = clique.assemble(exp_files)
 
-    log = Logger.get_logger("farm_publishing")
+    if not log:
+        log = Logger.getLogger(__name__)
 
     # create representation for every collected sequence
     for collection in collections:
@@ -892,7 +932,7 @@ def prepare_cache_representations(skeleton_data, exp_files, anatomy):
     return representations
 
 
-def create_instances_for_cache(instance, skeleton):
+def create_instances_for_cache(instance, skeleton, log=None):
     """Create instance for cache.
 
     This will create new instance for every AOV it can detect in expected
@@ -915,7 +955,9 @@ def create_instances_for_cache(instance, skeleton):
     product_name = skeleton["productName"]
     product_type = skeleton["productType"]
     exp_files = instance.data["expectedFiles"]
-    log = Logger.get_logger("farm_publishing")
+
+    if not log:
+        log = Logger.getLogger(__name__)
 
     instances = []
     # go through AOVs in expected files
@@ -1100,13 +1142,14 @@ def attach_instances_to_product(attach_to, instances):
     return new_instances
 
 
-def create_metadata_path(instance, anatomy):
+def create_metadata_path(instance, anatomy, log=None):
     ins_data = instance.data
     # Ensure output dir exists
     output_dir = ins_data.get(
         "publishRenderMetadataFolder", ins_data["outputDir"])
 
-    log = Logger.get_logger("farm_publishing")
+    if not log:
+        log = Logger.get_logger("farm_publishing")
 
     try:
         if not os.path.isdir(output_dir):
@@ -1115,7 +1158,18 @@ def create_metadata_path(instance, anatomy):
         # directory is not available
         log.warning("Path is unreachable: `{}`".format(output_dir))
 
-    metadata_filename = "{}_metadata.json".format(ins_data["productName"])
+    ### Starts Alkemy-X Override ###
+    # Prefixing metadata file with timestamp and asset so the .json files are
+    # unique and not overwrite each other. This is necessary because in Hiero
+    # we use the same working directory to publish multiple subsets at once
+    # and when the subset was called the same, it was overwriting the same file
+    # over and over
+    metadata_filename = "{}_{}_{}_metadata.json".format(
+        datetime.datetime.now().strftime("%d%m%Y%H%M%S"),
+        ins_data["anatomyData"]["folder"]["name"],
+        ins_data["subset"]
+    )
+    ### Ends Alkemy-X Override ###
 
     metadata_path = os.path.join(output_dir, metadata_filename)
 

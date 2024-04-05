@@ -1,7 +1,6 @@
 """Core pipeline functionality"""
 
 import os
-import types
 import logging
 import platform
 import uuid
@@ -21,7 +20,6 @@ from .anatomy import Anatomy
 from .template_data import get_template_data_with_names
 from .workfile import (
     get_workdir,
-    get_workfile_template_key,
     get_custom_workfile_template_by_string_context,
 )
 from . import (
@@ -584,6 +582,17 @@ def change_current_context(folder_entity, task_entity, template_key=None):
         else:
             os.environ[key] = value
 
+    ### Starts Alkemy-X Override ###
+    # Calculate the hierarchy environment and update
+    project_entity = ayon_api.get_project(project_name)
+    hierarchy_env = get_hierarchy_env(project_entity, folder_entity, skip_empty=False)
+    for key, value in hierarchy_env.items():
+        if value is None:
+            os.environ.pop(key, None)
+        else:
+            os.environ[key] = value
+    ### Ends Alkemy-X Override ###
+
     data = envs.copy()
 
     # Convert env keys to human readable keys
@@ -611,3 +620,83 @@ def get_process_id():
     if _process_id is None:
         _process_id = str(uuid.uuid4())
     return _process_id
+
+
+### Starts Alkemy-X Override ###
+def get_hierarchy_env(project_doc, asset_doc, skip_empty=True):
+    """Returns an environment dictionary based on the hierarchy of an asset in a project
+
+    The environment dictionary contains keys representing the different levels of the
+    visual hierarchy (e.g. "SHOW", "SEASON", "EPISODE", etc.) and their corresponding
+    values, if available.
+
+    Args:
+        project_doc (dict): A dictionary containing metadata about the project.
+        asset_doc (dict): A dictionary containing metadata about the asset.
+        skip_empty (bool): Whether to skip env entries that we don't have a value for.
+
+    Returns:
+        dict: An environment dictionary with keys "SHOW", "SEASON", "EPISODE", "SEQ",
+            "SHOT", and "ASSET_TYPE". The values of the keys are the names of the
+            corresponding entities in the hierarchy. If an entity is not present in the
+            hierarchy, its corresponding key will not be present or have a value of None
+            if 'skip_empty' is set to False.
+
+    """
+    visual_hierarchy = [asset_doc]
+    current_doc = asset_doc
+    project_name = project_doc["name"]
+    while True:
+        visual_parent_id = current_doc["data"]["visualParent"]
+        visual_parent = None
+        if visual_parent_id:
+            visual_parent = ayon_api.get_folder_by_id(project_name, visual_parent_id)
+
+        if not visual_parent:
+            break
+
+        visual_hierarchy.append(visual_parent)
+        current_doc = visual_parent
+
+    # Dictionary that maps the SG entity names from SG-leecher to their corresponding
+    # environment variables
+    sg_to_env_map = {
+        "Project": "SHOW",
+        "Season": "SEASON",
+        "Episode": "EPISODE",
+        "Sequence": "SEQ",
+        "Shot": "SHOT",
+        "Asset": "ASSET_TYPE",
+    }
+
+    # We create a default env with None values so when we switch context, we can remove
+    # the environment variables that aren't defined
+    env = {
+        "SHOW": project_doc["data"]["code"],
+        "SEASON": None,
+        "EPISODE": None,
+        "SEQ": None,
+        "SHOT": None,
+        "SHOTNUM": None,
+        "ASSET_TYPE": None,
+    }
+
+    # For each entity on the hierarchy, we set its environment variable
+    for parent in visual_hierarchy:
+        sg_entity_type = parent["data"].get("shotgridType")
+        env_key = sg_to_env_map.get(sg_entity_type)
+        if env_key:
+            env[env_key] = parent["name"]
+
+    # Fill up SHOTNUM assuming it's the last token part of the SHOT env
+    # variable
+    if env.get("SHOT"):
+        env["SHOTNUM"] = env["SHOT"].split("_")[-1]
+
+    # Remove empty values from env if 'skip_empty' is set to True
+    if skip_empty:
+        env = {key: value for key, value in env.items() if value is not None}
+
+    return env
+### Ends Alkemy-X Override ###
+

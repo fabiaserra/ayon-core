@@ -167,7 +167,17 @@ class IntegrateAsset(pyblish.api.InstancePlugin):
                 "uasset",
                 "blendScene",
                 "yeticacheUE",
-                "tycache"
+                "tycache",
+                #### Starts Alkemy-X overrides ####
+                # Missing from OP TODO: create PR to add them
+                "mantra_rop",
+                "arnold_rop",
+                "karma_rop",
+                # Add AX custom families
+                "color_grade",
+                "plate",
+                "reference",
+                #### Ends Alkemy-X overrides ####
                 ]
 
     default_template_name = "publish"
@@ -881,6 +891,9 @@ class IntegrateAsset(pyblish.api.InstancePlugin):
                 attributes[key] = value
             else:
                 data[key] = value
+
+        # Add stagingDir to representation data
+        data["stagingDir"] = stagingdir
 
         # add colorspace data if any exists on representation
         if repre.get("colorspaceData"):

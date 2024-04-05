@@ -79,22 +79,46 @@ class ProcessSubmittedJobOnFarm(pyblish.api.InstancePlugin,
 
     """
 
-    label = "Submit Image Publishing job to Deadline"
+    label = "Submit publish job to Deadline"
     order = pyblish.api.IntegratorOrder + 0.2
     icon = "tractor"
 
     targets = ["local"]
 
     hosts = ["fusion", "max", "maya", "nuke", "houdini",
-             "celaction", "aftereffects", "harmony", "blender"]
+             "celaction", "aftereffects", "harmony", "traypublisher",
+             "hiero", "blender"]
 
-    families = ["render.farm", "render.frames_farm",
-                "prerender.farm", "prerender.frames_farm",
-                "renderlayer", "imagesequence",
-                "vrayscene", "maxrender",
-                "arnold_rop", "mantra_rop",
-                "karma_rop", "vray_rop",
-                "redshift_rop"]
+    ### Starts Alkemy-X Override ###
+    # Add all the families from TrayPublisher with a `.farm` suffix so this
+    # plugin only picks them up when the suffix is added
+    families = [
+        "arnold_rop",
+        "camera.farm",
+        "image.farm",
+        "imagesequence",
+        "karma_rop",
+        "mantra_rop",
+        "matchmove.farm",
+        "maxrender",
+        "model.farm",
+        "plate.farm",
+        "pointcache.farm",
+        "prerender.frames_farm",
+        "prerender.farm",
+        "redshift_rop",
+        "reference.farm",
+        "render.frames_farm",
+        "render.farm",
+        "renderlayer",
+        "rig.farm",
+        "simpleUnrealTexture.farm",
+        "vdb.farm",
+        "vray_rop",
+        "vrayscene",
+        "workfile.farm",
+    ]
+    ### Ends Alkemy-X Override ###
 
     aov_filter = [
         {
@@ -111,6 +135,10 @@ class ProcessSubmittedJobOnFarm(pyblish.api.InstancePlugin,
             "value": [r".*"]
         },
         {
+            "name": "houdini",
+            "value": [r".*"]
+        },
+        {
             "name": "harmony",
             "value": [r".*"]
         },
@@ -122,6 +150,10 @@ class ProcessSubmittedJobOnFarm(pyblish.api.InstancePlugin,
             "name": "max",
             "value": [r".*"]
         },
+        {
+            "name": "nuke",
+            "value": [r".*"]
+        },
     ]
 
     environ_keys = [
@@ -130,7 +162,7 @@ class ProcessSubmittedJobOnFarm(pyblish.api.InstancePlugin,
         "FTRACK_SERVER",
         "AYON_APP_NAME",
         "AYON_USERNAME",
-        "OPENPYPE_SG_USER",
+        "AYON_SG_USER",
         "KITSU_LOGIN",
         "KITSU_PWD"
     ]
@@ -152,7 +184,8 @@ class ProcessSubmittedJobOnFarm(pyblish.api.InstancePlugin,
         "slate": ["slateFrames", "slate"],
         "review": ["lutPath"],
         "render2d": ["bakingNukeScripts", "version"],
-        "renderlayer": ["convertToScanline"]
+        "renderlayer": ["convertToScanline"],
+        "plate.farm": ["main_plate", "cut_info_data", "sg_tags_data", "asset_working_format", "edit_note_data"],
     }
 
     # list of family names to transfer to new family if present
@@ -165,7 +198,10 @@ class ProcessSubmittedJobOnFarm(pyblish.api.InstancePlugin,
     # poor man exclusion
     skip_integration_repre_list = []
 
-    def _submit_deadline_post_job(self, instance, job, instances):
+    ### Starts Alkemy-X Override ###
+    # Make 'jobs' argument a list so we can pass multiple dependency jobs
+    def _submit_deadline_post_job(self, instance, jobs, instances):
+    ### Ends Alkemy-X Override ###
         """Submit publish job to Deadline.
 
         Returns:
@@ -184,6 +220,23 @@ class ProcessSubmittedJobOnFarm(pyblish.api.InstancePlugin,
         if instance_version != 1:
             override_version = instance_version
 
+        ### Starts Alkemy-X Override ###
+        # Collect task from instance if not set in the context
+        # due to TrayPublisher not collecting it
+        task_name = instance.context.data["task"] or instance.data.get("task", os.getenv("AYON_TASK_NAME"))
+
+        # Add 'asset' to publish job label for extra clarity
+        job_name = "Publish {} - {}{} - {} - {} - {} ({})".format(
+            instances[0]["productType"],
+            instances[0]["productName"],
+            " v{0:03d}".format(override_version) if override_version else "",
+            task_name,
+            instance.data["asset"],
+            instance.context.data["projectName"],
+            os.getenv("SHOW")
+        )
+        ### Ends Alkemy-X Override ###
+
         output_dir = self._get_publish_folder(
             anatomy,
             deepcopy(instance.data["anatomyData"]),
@@ -197,12 +250,21 @@ class ProcessSubmittedJobOnFarm(pyblish.api.InstancePlugin,
         # Transfer the environment from the original job to this dependent
         # job so they use the same environment
         metadata_path, rootless_metadata_path = \
-            create_metadata_path(instance, anatomy)
+            create_metadata_path(instance, anatomy, log=self.log)
+        self.log.info("Metadata path: %s", metadata_path)
 
         environment = {
             "AYON_PROJECT_NAME": instance.context.data["projectName"],
-            "AYON_FOLDER_PATH": instance.context.data["folderPath"],
-            "AYON_TASK_NAME": instance.context.data["task"],
+            ### Starts Alkemy-X Override ###
+            # Grab context from instance instead of context.data for the
+            # cases where we use a generic context to publish to other contexts
+            # (e.g. when ingesting in Hiero we use a high level context and we
+            # need each individual publish to have the AYON_FOLDER_PATH pointing
+            # to the final destination context)
+            # "AYON_FOLDER_PATH": instance.context.data["folderPath"],
+            "AYON_FOLDER_PATH": instance.context["folderPath"],
+            "AYON_TASK_NAME": task_name,
+            ### Ends Alkemy-X Override ###
             "AYON_USERNAME": instance.context.data["user"],
             "AYON_LOG_NO_COLORS": "1",
             "IS_TEST": str(int(is_in_tests())),
@@ -219,6 +281,14 @@ class ProcessSubmittedJobOnFarm(pyblish.api.InstancePlugin,
         for env_key in self.environ_keys:
             if os.getenv(env_key):
                 environment[env_key] = os.environ[env_key]
+
+        # pass environment keys from self.environ_job_filter
+        ### Starts Alkemy-X Override ###
+        # Make 'jobs' argument a list so we can pass multiple dependency jobs
+        job_environ = {}
+        for job in jobs:
+            job_environ.update(job.get("Props", {}).get("Env", {}))
+        ### Ends Alkemy-X Override ###
 
         priority = self.deadline_priority or instance.data.get("priority", 50)
 
@@ -288,8 +358,20 @@ class ProcessSubmittedJobOnFarm(pyblish.api.InstancePlugin,
                 payload["JobInfo"]["JobDependency{}".format(
                     job_index)] = assembly_id  # noqa: E501
                 job_index += 1
-        elif job.get("_id"):
-            payload["JobInfo"]["JobDependency0"] = job["_id"]
+        ### Starts Alkemy-X Override ###
+        # Make 'jobs' argument a list so we can pass multiple dependency jobs
+        else:
+            index = 0
+            for job in jobs:
+                if not job.get("_id"):
+                    continue
+                payload["JobInfo"][f"JobDependency{index}"] = job["_id"]
+                # Hack to allow publish job to continue even if review task fails
+                # because of this bug we have with monitored process in Nuke tasks
+                # where the task shows as failed even though it completed
+                payload["JobInfo"]["ResumeOnFailedDependencies"] = True
+                index +=1
+        ### Ends Alkemy-X Override ###
 
         for index, (key_, value_) in enumerate(environment.items()):
             payload["JobInfo"].update(
@@ -312,8 +394,7 @@ class ProcessSubmittedJobOnFarm(pyblish.api.InstancePlugin,
 
         deadline_publish_job_id = response.json()["_id"]
 
-        return deadline_publish_job_id
-
+        return deadline_publish_job_id, metadata_path
 
     def process(self, instance):
         # type: (pyblish.api.Instance) -> None
@@ -335,7 +416,7 @@ class ProcessSubmittedJobOnFarm(pyblish.api.InstancePlugin,
 
         instance_skeleton_data = create_skeleton_instance(
             instance, families_transfer=self.families_transfer,
-            instance_transfer=self.instance_transfer)
+            instance_transfer=self.instance_transfer, log=self.log)
         """
         if content of `expectedFiles` list are dictionaries, we will handle
         it as list of AOVs, creating instance for every one of them.
@@ -391,7 +472,7 @@ class ProcessSubmittedJobOnFarm(pyblish.api.InstancePlugin,
                 instance, instance_skeleton_data,
                 aov_filter,
                 self.skip_integration_repre_list,
-                do_not_add_review
+                do_not_add_review, self.log
             )
         else:
             representations = prepare_representations(
@@ -402,7 +483,8 @@ class ProcessSubmittedJobOnFarm(pyblish.api.InstancePlugin,
                 self.skip_integration_repre_list,
                 do_not_add_review,
                 instance.context,
-                self
+                self,
+                self.log
             )
 
             if "representations" not in instance_skeleton_data.keys():
@@ -427,12 +509,17 @@ class ProcessSubmittedJobOnFarm(pyblish.api.InstancePlugin,
         ._____.
 
         '''
+        ### Starts Alkemy-X Override ###
+        # Make 'jobs' argument a list so we can pass multiple dependency jobs
+        # If we have multiple submission jobs, we grab that key instead
+        if "deadlineSubmissionJobs" in instance.data:
+                render_jobs = instance.data.pop("deadlineSubmissionJobs", [])
+        else:
+                render_job = instance.data.pop("deadlineSubmissionJob", None)
+                if render_job:
+                    render_jobs = [render_job]
 
-        render_job = instance.data.pop("deadlineSubmissionJob", None)
-        if not render_job and instance.data.get("tileRendering") is False:
-            raise AssertionError(("Cannot continue without valid "
-                                  "Deadline submission."))
-        if not render_job:
+        if not render_jobs:
             import getpass
 
             render_job = {}
@@ -447,9 +534,9 @@ class ProcessSubmittedJobOnFarm(pyblish.api.InstancePlugin,
                 render_job["Props"]["Batch"] = instance.data.get(
                     "jobBatchName")
             else:
-                batch = os.path.splitext(os.path.basename(
-                    instance.context.data.get("currentFile")))[0]
-                render_job["Props"]["Batch"] = batch
+                render_job["Props"]["Batch"] = os.path.basename(
+                    instance.context.data.get("currentFile")
+                )
             # User is deadline user
             render_job["Props"]["User"] = instance.context.data.get(
                 "deadlineUser", getpass.getuser())
@@ -459,6 +546,8 @@ class ProcessSubmittedJobOnFarm(pyblish.api.InstancePlugin,
                 "FTRACK_API_KEY": os.environ.get("FTRACK_API_KEY"),
                 "FTRACK_SERVER": os.environ.get("FTRACK_SERVER"),
             }
+            render_jobs = [render_job]
+        ### Ends Alkemy-X Override ###
 
         # get default deadline webservice url from deadline module
         self.deadline_url = instance.context.data["defaultDeadline"]
@@ -467,8 +556,11 @@ class ProcessSubmittedJobOnFarm(pyblish.api.InstancePlugin,
             self.deadline_url = instance.data.get("deadlineUrl")
         assert self.deadline_url, "Requires Deadline Webservice URL"
 
-        deadline_publish_job_id = \
-            self._submit_deadline_post_job(instance, render_job, instances)
+        ### Starts Alkemy-X Override ###
+        # Make 'jobs' argument a list so we can pass multiple dependency jobs
+        deadline_publish_job_id, metadata_path = \
+            self._submit_deadline_post_job(instance, render_jobs, instances)
+        ### Ends Alkemy-X Override ###
 
         # Inject deadline url to instances.
         for inst in instances:
@@ -482,10 +574,10 @@ class ProcessSubmittedJobOnFarm(pyblish.api.InstancePlugin,
             "fps": instance_skeleton_data["fps"],
             "source": instance_skeleton_data["source"],
             "user": instance.context.data["user"],
-            "version": instance.context.data["version"],  # workfile version
+            "version": instance.context.data.get("version"),  # workfile version
             "intent": instance.context.data.get("intent"),
             "comment": instance.context.data.get("comment"),
-            "job": render_job or None,
+            "job": render_jobs[0] or None,
             "instances": instances
         }
 
@@ -497,8 +589,12 @@ class ProcessSubmittedJobOnFarm(pyblish.api.InstancePlugin,
         if audio_file and os.path.isfile(audio_file):
             publish_job.update({"audio": audio_file})
 
-        metadata_path, rootless_metadata_path = \
-            create_metadata_path(instance, anatomy)
+        ### Starts Alkemy-X Override ###
+        # Create metadata path only as we are adding a timestamp up to the
+        # second and this caused it to have a missmatch in some cases
+        # metadata_path, rootless_metadata_path = \
+        #     create_metadata_path(instance, anatomy)
+        ### Ends Alkemy-X Override ###
 
         with open(metadata_path, "w") as f:
             json.dump(publish_job, f, indent=4, sort_keys=True)
@@ -552,7 +648,10 @@ class ProcessSubmittedJobOnFarm(pyblish.api.InstancePlugin,
                     host_name,
                     task_name=template_data["task"]["name"],
                     task_type=template_data["task"]["type"],
-                    product_type="render",
+                    ### Starts Alkemy-X Override ###
+                    # Remove hard-coded `render` family
+                    product_type=product_type,
+                    ### Ends Alkemy-X Override ###
                     product_name=product_name,
                     project_settings=context.data["project_settings"]
                 )

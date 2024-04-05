@@ -22,6 +22,12 @@ VERSION_REGEX = re.compile(
     r"(?:\+(?P<buildmetadata>[a-zA-Z\d\-.]*))?"
 )
 
+# Env vars to ignore when injecting environment in the farm
+FARM_ENVS_TO_IGNORE = [
+    "SESI_LMHOST",
+    "ADSKFLEX_LICENSE_FILE",
+]
+
 
 class OpenPypeVersion:
     """Fake semver version class for OpenPype version purposes.
@@ -329,6 +335,7 @@ def inject_openpype_environment(deadlinePlugin):
         print(">>> Temporary path: {}".format(export_url))
 
         args = [
+            "--debug",
             "--headless",
             "extractenvironments",
             export_url
@@ -489,6 +496,7 @@ def inject_ayon_environment(deadlinePlugin):
         # Use applications addon arguments
         # TODO validate if applications addon should be used
         args = [
+            "--debug",
             "--headless",
             "addon",
             "applications",
@@ -547,6 +555,9 @@ def inject_ayon_environment(deadlinePlugin):
             contents = json.load(fp)
 
         for key, value in contents.items():
+            if key in FARM_ENVS_TO_IGNORE:
+                print(">>> Skipping license server env var: {}".format(key))
+                continue
             deadlinePlugin.SetProcessEnvironmentVariable(key, value)
 
         if "PATH" in contents:
@@ -598,14 +609,15 @@ def get_ayon_executable():
     if platform.system().lower() == "darwin":
         exe_list = exe_list.replace("\\ ", " ")
 
-    # Expand user paths
-    expanded_paths = []
-    for path in exe_list.split(";"):
-        if path.startswith("~"):
-            path = os.path.expanduser(path)
-        expanded_paths.append(path)
-    return ";".join(expanded_paths)
+    # # Expand user paths
+    # expanded_paths = []
+    # for path in exe_list.split(";"):
+    #     if path.startswith("~"):
+    #         path = os.path.expanduser(path)
+    #     expanded_paths.append(path)
+    # return ";".join(expanded_paths)
 
+    return exe_list
 
 def inject_render_job_id(deadlinePlugin):
     """Inject dependency ids to publish process as env var for validation."""

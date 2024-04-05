@@ -15,6 +15,10 @@ from ayon_core.pipeline.publish import (
 )
 
 
+SG_UPLOAD_FAMILIES = ["reference", "plate"]
+SG_GENERATE_REVIEW_FAMILIES = ["plate"]
+
+
 class CollectOtioSubsetResources(pyblish.api.InstancePlugin):
     """Get Resources for a product version"""
 
@@ -146,6 +150,9 @@ class CollectOtioSubsetResources(pyblish.api.InstancePlugin):
         self.log.info(
             "frame_start-frame_end: {}-{}".format(frame_start, frame_end))
 
+        ### Starts Alkemy-X Override ###
+        self.family = instance.data["family"]
+        ### Ends Alkemy-X Override ###
         if is_sequence:
             # file sequence way
             if hasattr(media_ref, "target_url_base"):
@@ -239,8 +246,22 @@ class CollectOtioSubsetResources(pyblish.api.InstancePlugin):
                 "frameEnd": end,
             })
 
+        ### Starts Alkemy-X Override ###
+        representation_data["tags"] = []
+        if self.family in SG_UPLOAD_FAMILIES:
+            self.log.debug("Adding 'shotgridreview' to representation tags")
+            representation_data["tags"].append("shotgridreview")
+
+        if self.family in SG_GENERATE_REVIEW_FAMILIES:
+            self.log.debug("Adding 'review' to representation tags")
+            representation_data["tags"].append("review")
+
+            self.log.debug("Updated representation -> %s" % representation_data)
+
         if kwargs.get("trim") is True:
-            representation_data["tags"] = ["trim"]
+            representation_data["tags"].append("trim")
+        ### Ends Alkemy-X Override ###
+
         return representation_data
 
     def get_template_name(self, instance):

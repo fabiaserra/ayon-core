@@ -6,7 +6,7 @@ import glob
 import clique
 import collections
 
-from ayon_core.lib import create_hard_link
+from ayon_core.lib import create_hard_link, StringTemplate
 
 
 def _copy_file(src_path, dst_path):
@@ -57,7 +57,11 @@ def check_destination_path(
     anatomy,
     anatomy_data,
     datetime_data,
-    template_name
+    template_name=None,
+    ### Starts Alkemy-X Override ###
+    template_str=None,
+    return_dest_path=False
+    ### Ends Alkemy-X Override ###
 ):
     """ Try to create destination path based on 'template_name'.
 
@@ -69,25 +73,38 @@ def check_destination_path(
         anatomy (Anatomy): Project anatomy.
         anatomy_data (dict): Template data to fill anatomy templates.
         datetime_data (dict): Values with actual date.
+        ### Starts Alkemy-X Override ###
         template_name (str): Name of template which should be used from anatomy
             templates.
+        template_str (str): Use given token template instead of the template_name
+        return_dest_path (bool): Whether we want to return a tuple with the path
+            where the representation will actually be delivered. We are doing it
+            optionally so we don't need to change the default interface of the
+            function and affect other OP plugins.
+        ### Ends Alkemy-X Override ###
+
     Returns:
-        Dict[str, List[str]]: Report of happened errors. Key is message title
+        Dict[str, List[str]], str: Report of happened errors. Key is message title
             value is detailed information.
     """
 
     anatomy_data.update(datetime_data)
-    path_template = anatomy.get_template_item(
-        "delivery", template_name, "path"
-    )
-    dest_path = path_template.format(anatomy_data)
+    ### Starts Alkemy-X Override ###
+    # Expose a new arg so we can override the template path used for delivery
+    if template_str:
+        dest_path = StringTemplate.format_template(template_str, anatomy_data)
+    else:
+        anatomy_filled = anatomy.format_all(anatomy_data)
+        dest_path = anatomy_filled["delivery"][template_name]
+
     report_items = collections.defaultdict(list)
 
     if not dest_path.solved:
         msg = (
             "Missing keys in Representation's context"
             " for anatomy template \"{}\"."
-        ).format(template_name)
+        ).format(template_name or template_str)
+    ### Ends Alkemy-X Override ###
 
         sub_msg = (
             "Representation: {}<br>"
@@ -111,6 +128,11 @@ def check_destination_path(
 
         report_items[msg].append(sub_msg)
 
+    ### Starts Alkemy-X Override ###
+    if return_dest_path:
+        return report_items, dest_path
+    ### Ends Alkemy-X Override ###
+
     return report_items
 
 
@@ -122,7 +144,8 @@ def deliver_single_file(
     anatomy_data,
     format_dict,
     report_items,
-    log
+    log,
+    template_str=None,
 ):
     """Copy single file to calculated path based on template
 
@@ -136,6 +159,7 @@ def deliver_single_file(
         format_dict (dict): root dictionary with names and values
         report_items (collections.defaultdict): to return error messages
         log (logging.Logger): for log printing
+        template_str (str): Use given token template instead of the template_name
 
     Returns:
         (collections.defaultdict, int)
@@ -152,10 +176,15 @@ def deliver_single_file(
     if format_dict:
         anatomy_data = copy.deepcopy(anatomy_data)
         anatomy_data["root"] = format_dict["root"]
-    template_obj = anatomy.get_template_item(
-        "delivery", template_name, "path"
-    )
-    delivery_path = template_obj.format_strict(anatomy_data)
+
+    ### Starts Alkemy-X Override ###
+    # Expose a new arg so we can override the template path used for delivery
+    if template_str:
+        delivery_path = StringTemplate.format_template(template_str, anatomy_data)
+    else:
+        template_obj = anatomy.templates_obj["delivery"][template_name]
+        delivery_path = template_obj.format_strict(anatomy_data)
+    ### Ends Alkemy-X Override ###
 
     # Backwards compatibility when extension contained `.`
     delivery_path = delivery_path.replace("..", ".")
@@ -183,6 +212,7 @@ def deliver_sequence(
     format_dict,
     report_items,
     log,
+    template_str=None,
     has_renumbered_frame=False,
     new_frame_start=0
 ):
@@ -204,7 +234,9 @@ def deliver_sequence(
         format_dict (dict): root dictionary with names and values
         report_items (collections.defaultdict): to return error messages
         log (logging.Logger): for log printing
-
+        ### Starts Alkemy-X Override ###
+        template_str (str): Use given token template instead of the template_name
+        ### Ends Alkemy-X Override ###
     Returns:
         (collections.defaultdict, int)
     """
@@ -224,27 +256,29 @@ def deliver_sequence(
         report_items["Source file was not found"].append(msg)
         return report_items, 0
 
-    delivery_template = anatomy.get_template_item(
-        "delivery", template_name, "path", default=None
-    )
-    if delivery_template is None:
-        msg = (
-            "Delivery template \"{}\" in anatomy of project \"{}\""
-            " was not found"
-        ).format(template_name, anatomy.project_name)
-        report_items[""].append(msg)
-        return report_items, 0
+    ### Starts Alkemy-X Override ###
+    if not template_str:
+        delivery_templates = anatomy.templates.get("delivery") or {}
+        delivery_template = delivery_templates.get(template_name)
+        if delivery_template is None:
+            msg = (
+                "Delivery template \"{}\" in anatomy of project \"{}\""
+                " was not found"
+            ).format(template_name, anatomy.project_name)
+            report_items[""].append(msg)
+            return report_items, 0
 
-    # Check if 'frame' key is available in template which is required
-    #   for sequence delivery
-    if "{frame" not in delivery_template.template:
-        msg = (
-            "Delivery template \"{}\" in anatomy of project \"{}\""
-            "does not contain '{{frame}}' key to fill. Delivery of sequence"
-            " can't be processed."
-        ).format(template_name, anatomy.project_name)
-        report_items[""].append(msg)
-        return report_items, 0
+        # Check if 'frame' key is available in template which is required
+        #   for sequence delivery
+        if "{frame" not in delivery_template:
+            msg = (
+                "Delivery template \"{}\" in anatomy of project \"{}\""
+                "does not contain '{{frame}}' key to fill. Delivery of sequence"
+                " can't be processed."
+            ).format(template_name, anatomy.project_name)
+            report_items[""].append(msg)
+            return report_items, 0
+    ### Ends Alkemy-X Override ###
 
     dir_path, file_name = os.path.split(str(src_path))
 
@@ -282,7 +316,15 @@ def deliver_sequence(
     anatomy_data["frame"] = frame_indicator
     if format_dict:
         anatomy_data["root"] = format_dict["root"]
-    delivery_path = delivery_template.format_strict(anatomy_data)
+
+    ### Starts Alkemy-X Override ###
+    # Expose a new arg so we can override the template path used for delivery
+    if template_str:
+        delivery_path = StringTemplate.format_template(template_str, anatomy_data)
+    else:
+        template_obj = anatomy.templates_obj["delivery"][template_name]
+        delivery_path = template_obj.format_strict(anatomy_data)
+    ### Endss Alkemy-X Override ###
 
     delivery_path = os.path.normpath(delivery_path.replace("\\", "/"))
     delivery_folder = os.path.dirname(delivery_path)

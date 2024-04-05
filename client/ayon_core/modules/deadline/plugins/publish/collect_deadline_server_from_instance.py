@@ -30,7 +30,7 @@ class CollectDeadlineServerFromInstance(pyblish.api.InstancePlugin):
         """Get Deadline Webservice URL from render instance.
 
         This will get all configured Deadline Webservice URLs and create
-        subset of them based upon project configuration. It will then take
+        product of them based upon project configuration. It will then take
         `deadlineServers` from render instance that is now basically `int`
         index of that list.
 

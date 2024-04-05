@@ -14,22 +14,22 @@ import hou
 def get_image_avalon_container():
     """The COP2 files must be in a COP2 network.
 
-    So we maintain a single entry point within AVALON_CONTAINERS,
+    So we maintain a single entry point within PRODUCTS,
     just for ease of use.
 
     """
 
-    path = pipeline.AVALON_CONTAINERS
+    path = pipeline.PRODUCTS
     avalon_container = hou.node(path)
     if not avalon_container:
         # Let's create avalon container secretly
         # but make sure the pipeline still is built the
         # way we anticipate it was built, asserting it.
-        assert path == "/obj/AVALON_CONTAINERS"
+        assert path == "/obj/PRODUCTS"
 
         parent = hou.node("/obj")
         avalon_container = parent.createNode(
-            "subnet", node_name="AVALON_CONTAINERS"
+            "subnet", node_name="PRODUCTS"
         )
 
     image_container = hou.node(path + "/IMAGES")

@@ -8,19 +8,6 @@ class OCIOEnvHook(PreLaunchHook):
     """Set OCIO environment variable for hosts that use OpenColorIO."""
 
     order = 0
-    hosts = {
-        "substancepainter",
-        "fusion",
-        "blender",
-        "aftereffects",
-        "3dsmax",
-        "houdini",
-        "maya",
-        "nuke",
-        "hiero",
-        "resolve",
-        "openrv"
-    }
     launch_types = set()
 
     def execute(self):

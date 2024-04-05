@@ -13,7 +13,9 @@ from ayon_core.pipeline.colorspace import (
 )
 from ayon_core.hosts.nuke.api.lib import (
     get_imageio_input_colorspace,
-    maintained_selection
+    maintained_selection,
+    get_all_dependent_nodes,
+    reset_selection,
 )
 from ayon_core.hosts.nuke.api import (
     containerise,
@@ -38,6 +40,7 @@ class LoadClip(plugin.NukeLoader):
     product_types = {
         "source",
         "plate",
+        "reference",
         "render",
         "prerender",
         "review",
@@ -47,7 +50,10 @@ class LoadClip(plugin.NukeLoader):
         ext.lstrip(".") for ext in IMAGE_EXTENSIONS.union(VIDEO_EXTENSIONS)
     )
 
-    label = "Load Clip"
+    ### Starts Alkemy-X Override ###
+    # Change label so it's more user friendly
+    label = "Load Sequence"
+    ### Ends Alkemy-X Override ###
     order = -20
     icon = "file-video-o"
     color = "white"
@@ -77,7 +83,12 @@ class LoadClip(plugin.NukeLoader):
                 "add_retime",
                 help="Load with retime",
                 default=cls.options_defaults["add_retime"]
-            )
+            ),
+            qargparse.Boolean(
+                "load_deep",
+                help="Load with DeepRead",
+                default=cls.options_defaults.get("load_deep", False)
+            ),
         ]
 
     @classmethod
@@ -124,11 +135,16 @@ class LoadClip(plugin.NukeLoader):
         last = version_attributes.get("frameEnd")
         first -= self.handle_start
         last += self.handle_end
+        ### Starts Alkemy-x override ###
+        # Make sure first and last are integers
+        first = int(first)
+        last = int(last)
 
         if not is_sequence:
             duration = last - first
             first = 1
             last = first + duration
+        ### Ends Alkemy-x override ###
 
         # Fallback to folder name when namespace is None
         if namespace is None:
@@ -143,7 +159,7 @@ class LoadClip(plugin.NukeLoader):
 
         # Create the Loader with the filename path set
         read_node = nuke.createNode(
-            "Read",
+            "DeepRead" if options.get("load_deep", False) else "Read",
             "name {}".format(read_name),
             inpanel=False
         )
@@ -157,7 +173,33 @@ class LoadClip(plugin.NukeLoader):
         # to avoid multiple undo steps for rest of process
         # we will switch off undo-ing
         with viewer_update_and_undo_stop():
-            read_node["file"].setValue(filepath)
+            ### Starts Alkemy-x override ###
+            if is_sequence:
+                formatted_filepath = f"{filepath} {first}-{last}"
+            else:
+                formatted_filepath = filepath
+
+            # fromUserText let's Nuke automatically fill frame details
+            read_node["file"].fromUserText(formatted_filepath)
+
+            # Override root setting of format. Read format shouldn't be dynamic
+            for format in nuke.formats():
+                if read_node.height() == format.height() and \
+                        read_node.width() == format.width() and \
+                        read_node.pixelAspect() == format.pixelAspect():
+                    self.log.info(
+                        "Setting format '%s' (%sx%sx%s) in read node %s.",
+                            format.name() or "",
+                            format.width(),
+                            format.height(),
+                            format.pixelAspect(),
+                            read_node.name()
+                    )
+                    try:
+                        read_node["format"].setValue(format)
+                        break
+                    except TypeError:
+                        self.log.error("Couldn't set format")
 
             self.set_colorspace_to_node(
                 read_node,
@@ -167,8 +209,16 @@ class LoadClip(plugin.NukeLoader):
                 repre_entity
             )
 
-            self._set_range_to_node(read_node, first, last, start_at_workfile)
-
+            if not is_sequence:
+                load_first_frame = version_data.get("frameStart", None)
+                load_handle_start = version_data.get("handleStart", None)
+                if load_first_frame and load_handle_start:
+                    start_frame = load_first_frame - load_handle_start
+                else:
+                    start_frame = self.script_start
+                self._loader_shift(read_node, int(start_frame), start_at_workfile)
+            ### Ends Alkemy-x override ###
+            
             version_name = version_entity["version"]
             if version_name < 0:
                 version_name = "hero"
@@ -408,8 +458,10 @@ class LoadClip(plugin.NukeLoader):
         read_node['origlast'].setValue(int(last))
         read_node['last'].setValue(int(last))
 
-        # set start frame depending on workfile or version
-        self._loader_shift(read_node, start_at_workfile)
+        ### Starts Alkemy-x override ###
+        # # set start frame depending on workfile or version
+        # self._loader_shift(read_node, start_at_workfile)
+        ### Ends Alkemy-x override ###
 
     def _make_retimes(self, parent_node, version_data):
         ''' Create all retime and timewarping nodes with copied animation '''
@@ -466,7 +518,8 @@ class LoadClip(plugin.NukeLoader):
                 for i, n in enumerate(dependent_nodes):
                     last_node.setInput(i, n)
 
-    def _loader_shift(self, read_node, workfile_start=False):
+    ### Starts Alkemy-x override ###
+    def _loader_shift(self, read_node, start_frame, workfile_start=False):
         """ Set start frame of read node to a workfile start
 
         Args:
@@ -474,10 +527,64 @@ class LoadClip(plugin.NukeLoader):
             workfile_start (bool): set workfile start frame if true
 
         """
-        if workfile_start:
-            read_node['frame_mode'].setValue("start at")
-            read_node['frame'].setValue(str(self.script_start))
+        with maintained_selection():
+            # Remove selection
+            reset_selection()
 
+            read_node["selected"].setValue(True)
+
+            time_offset = None
+            reformat = None
+            read_name = read_node.name()
+            # Creates time_offset instead of read in-node operations
+            if workfile_start:
+                dependent_nodes = get_all_dependent_nodes(read_node)
+                for dependent_node in dependent_nodes:
+                    if dependent_node.Class() == "TimeOffset" and \
+                        dependent_node.name().startswith(read_name):
+                        time_offset = dependent_node
+                    elif dependent_node.Class() == "Reformat" and \
+                        dependent_node.name().startswith(read_name):
+                        reformat = dependent_node
+
+                    elif time_offset and reformat:
+                        break
+
+                # If time_offset and reformat found then update
+                # Account for video type starting at 1 instead of 0
+                start_frame -= 1
+
+                if time_offset:
+                    if time_offset["time_offset"].value() != start_frame:
+                        time_offset.setValue(start_frame)
+
+                else:
+                    nuke.createNode(
+                        "TimeOffset",
+                        f"name {read_name}_Ref_Offset time_offset {start_frame}",
+                        inpanel=False,
+                    )
+
+                # Only create reformat
+                if not reformat:
+                    # Plugin in plugins until loaded for the first time
+                    tmp_node = None
+                    try:
+                        tmp_node = nuke.createNode(
+                            "reference_reformat",
+                            f"name {read_name}_Ref_Reformat",
+                            inpanel=False,
+                        )
+                    except RuntimeError:
+                        nuke.createNode(
+                            "Reformat",
+                            f"name {read_name}_Ref_Reformat",
+                            inpanel=False,
+                        )
+                        # Incase the reference_reformat was made before error
+                        if tmp_node:
+                            nuke.delete(tmp_node)
+    ### Ends Alkemy-x override ###
     def _get_node_name(self, context):
         folder_entity = context["folder"]
         product_name = context["product"]["name"]
