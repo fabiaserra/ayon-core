@@ -1,7 +1,5 @@
 import click
 
-from ayon_core.lib import get_ayon_launcher_args
-from ayon_core.lib.execute import run_detached_process
 from ayon_core.modules import (
     AYONAddon,
     ITrayAddon

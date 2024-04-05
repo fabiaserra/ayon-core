@@ -10,6 +10,7 @@ from ayon_core.lib import (
     get_oiio_info_for_input,
     ToolNotFoundError,
 )
+from ayon_core.pipeline.publish import KnownPublishError
 from ayon_core.pipeline import (
     get_current_project_name,
     get_current_host_name
@@ -60,15 +61,12 @@ class ExtractConvertTextures(pyblish.api.InstancePlugin):
 
             stagingdir = os.path.normpath(repre.get("stagingDir"))
 
-            # TODO: abstract away so it's dynamic based on runtime
-            # for now we can simply hard-code the path to the maketx binary
-            # as we mount /sw to all of our workers
-            # try:
-            #     maketx_args = get_oiio_tool_args("maketx")
-            # except ToolNotFoundError:
-            #     self.log.error("OIIO tool not found.")
-            #     raise KnownPublishError("OIIO tool not found")
-            maketx_args = ["/sw/arnold/mtoa/2024_5.3.2.1/bin/maketx"]
+            try:
+                maketx_args = get_oiio_tool_args("maketx")
+            except ToolNotFoundError:
+                self.log.error("OIIO tool not found.")
+                raise KnownPublishError("OIIO tool not found")
+            
             self.log.debug("Found 'maketx' binary at %s", maketx_args)
 
             updated_files = []

@@ -70,7 +70,7 @@ class TextureLoader(load.LoaderPlugin):
         parent = get_textures_avalon_container()
 
         # Define node name
-        namespace = namespace if namespace else context["asset"]["name"]
+        namespace = namespace if namespace else context["folder"]["name"]
         node_name = "{}_{}".format(namespace, name) if namespace else name
 
         node = parent.createNode("arnold::image", node_name=node_name)

@@ -359,10 +359,10 @@ def generate_delivery_media_version(
     anatomy_data = copy.deepcopy(exr_repre_doc["context"])
     datetime_data = get_datetime_data()
     anatomy_data.update(datetime_data)
-    asset_data = template_data.get_template_data_with_names(
-        project_name, exr_repre_doc["context"]["asset"]
+    folder_data = template_data.get_template_data_with_names(
+        project_name, exr_repre_doc["context"]["folderPath"]
     )
-    anatomy_data.update(asset_data)
+    anatomy_data.update(folder_data)
 
     # Add {submission_notes} from SG version
     anatomy_data["submission_notes"] = sg_version[SG_SUBMISSION_NOTES]
@@ -510,7 +510,7 @@ def generate_delivery_media_version(
             output_name,
             output_anatomy_data["filename"],
             project_name,
-            asset_data["project"]["code"]
+            folder_data["project"]["code"]
         )
         response = submit.payload_submit(
             plugin="AxNuke",

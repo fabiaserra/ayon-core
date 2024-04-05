@@ -3,7 +3,7 @@ import getpass
 import json
 
 from ayon_core.lib import Logger, path_tools
-from ayon_core.pipeline import legacy_io, Anatomy
+from ayon_core.pipeline import Anatomy
 from ayon_core.pipeline.template_data import get_template_data
 from ayon_core.modules.deadline import constants as dl_constants
 from ayon_core.modules.deadline.lib import submit
@@ -11,7 +11,6 @@ from ayon_core.modules.delivery.scripts import utils, review
 
 from ayon_shotgrid.lib import credentials
 from ayon_shotgrid.scripts import populate_tasks
-
 
 
 logger = Logger.get_logger(__name__)

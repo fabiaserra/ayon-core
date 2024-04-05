@@ -231,7 +231,7 @@ class ProcessSubmittedJobOnFarm(pyblish.api.InstancePlugin,
             instances[0]["productName"],
             " v{0:03d}".format(override_version) if override_version else "",
             task_name,
-            instance.data["asset"],
+            instance.data["folderPath"],
             instance.context.data["projectName"],
             os.getenv("SHOW")
         )
