@@ -227,6 +227,20 @@ def republish_version_id_command(
     )
 
 
+@click.command("launch_sg_delivery")
+def launch_sg_delivery():
+    """Launch SG Delivery tool UI."""
+    from ayon_core.modules.delivery.tray import delivery_dialog
+    delivery_dialog.main()
+
+
+@click.command("launch_outsource")
+def launch_outsource():
+    """Launch Outsource Delivery tool UI."""
+    from ayon_core.modules.delivery.tray import outsource_dialog
+    outsource_dialog.main()
+
+
 @click.group(DeliveryModule.name, help="Delivery CLI")
 def cli_main():
     pass
@@ -235,19 +249,8 @@ cli_main.add_command(deliver_playlist_id_command)
 cli_main.add_command(deliver_version_id_command)
 cli_main.add_command(republish_version_id_command)
 cli_main.add_command(republish_playlist_id_command)
-
-@cli_main.command()
-def launch_sg_delivery():
-    """Launch SG Delivery tool UI."""
-    from ayon_core.modules.delivery.tray.delivery_dialog import DeliveryDialog
-    DeliveryDialog.main()
-
-
-@cli_main.command()
-def launch_outsource():
-    """Launch Outsource Delivery tool UI."""
-    from ayon_core.modules.delivery.tray.outsource_dialog import OutsourceDialog
-    OutsourceDialog.main()
+cli_main.add_command(launch_sg_delivery)
+cli_main.add_command(launch_outsource)
 
 
 if __name__ == "__main__":
