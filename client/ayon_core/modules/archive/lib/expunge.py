@@ -177,10 +177,12 @@ class ArchiveProject:
         if self.anatomy:
             self.clean_published_file_sources(archive=archive)
 
-        # Compress the work directories so I/O is faster when treating a lot
+        # Package the work directories so I/O is faster when treating a lot
         # of files as a single one
-        if archive:
-            self.compress_workfiles()
+        # NOTE: removed for now as we aren't sure if the benefits are worth
+        # the time it takes to package (and potentially unpackage) the files
+        # if archive:
+        #     self.package_workfiles()
 
         elapsed_time = time.time() - start_time
         logger.info("\n\nMore logging details at '%s'", self.summary_file)
@@ -554,6 +556,8 @@ class ArchiveProject:
                 continue
 
             rootless_source_path = version_entity["data"].get("source")
+            if not rootless_source_path:
+                continue
             source_path = self.anatomy.fill_root(rootless_source_path)
 
             # Create a path of what we want to symlink the source path
@@ -972,10 +976,10 @@ class ArchiveProject:
         else:
             logger.info(pprint.pprint(report_items))
 
-    def compress_workfiles(self):
-        """Compresses the work directories for a project."""
+    def package_workfiles(self):
+        """Package the work directories into .tar files."""
 
-        logger.info(" \n---- Compressing work files ----\n")
+        logger.info(" \n---- Packaging work files ----\n")
 
         for folder in ["assets", "shots"]:
             target = os.path.join(self.target_root, folder)
@@ -985,7 +989,7 @@ class ArchiveProject:
                 logger.warning(f" - {target} folder does not exist")
                 continue
 
-            # Compress every child folder under 'work'
+            # Package every child folder under 'work'
             for dirpath, dirnames, _ in os.walk(target, topdown=True):
                 # Skip all folders that aren't within a 'work' directory
                 if "/work" not in dirpath:
@@ -993,17 +997,18 @@ class ArchiveProject:
 
                 for dirname in list(dirnames):
                     child_dir = os.path.join(dirpath, dirname)
-                    logger.info(f"Compressing {child_dir}")
+                    logger.info(f"Packaging {child_dir}")
+                    # The .zip and .tar.gz are added just for backwards compatibility
+                    # but only .tar's should be created from now on
+                    if child_dir.endswith(".tar") or child_dir.endswith(".zip") or child_dir.endswith(".tar.gz"):
+                        logger.info("Skipping {child_dir} as it's already compressed")
+                        continue
+
                     if not const._debug:
                         # Create a single .tar entry with all the symlinks and files
                         run_subprocess(
                             ["tar", "-cf", f"{dirname}.tar", dirname, "--remove-files"],
-                            cwd=os.path.dirname(child_dir)
-                        )
-                        # And compress the .tar so it's lighter
-                        run_subprocess(
-                            ["pigz", "--fast", f"{dirname}.tar"],
-                            cwd=os.path.dirname(child_dir)
+                            cwd=dirpath
                         )
 
                     # Remove directory from dirnames to prevent further exploration
@@ -1183,6 +1188,9 @@ class ArchiveProject:
             bool: Whether the file was marked for deletion
             float: The size of the deleted file
         """
+        if not filepath:
+            return False, False
+
         # Extract the directory path and the original name
         dir_path, original_name = os.path.split(filepath)
 

@@ -283,6 +283,10 @@ class CollectNukeWrites(pyblish.api.InstancePlugin,
             "tags": ["shotgridreview", "review"]
         }
 
+        frame_start_str = self._get_frame_start_str(first_frame, last_frame)
+
+        representation['frameStart'] = frame_start_str
+
         # set slate frame
         collected_frames = self._add_slate_frame_to_collected_frames(
             instance,
@@ -391,12 +395,12 @@ class CollectNukeWrites(pyblish.api.InstancePlugin,
 
         # Extension may not match write node file type
         extension = os.path.splitext(write_file_path)[-1]
-        output_path_pattern = re.sub(fr"(.*\.)(#+)(\{extension})", r"\1*\3",  write_file_path)
+        output_path_pattern = path_tools.replace_frame_number_with_token(write_file_path, "*")
         output_files = glob.glob(output_path_pattern)
         if not output_files:
             raise PublishXmlValidationError(
                 self,
-                "No frames found on disk to publish matching write node output path",
+                f"No frames found on disk to publish matching write node output path: {output_path_pattern}" ,
                 formatting_data={
                     "output_path": write_file_path,
                     "write_node_name": write_node.fullName(),
