@@ -2,8 +2,11 @@
 
 from qtpy import QtWidgets
 
-from ayon_core.lib import get_ayon_launcher_args
-from ayon_core.lib import Logger, run_detached_process
+from ayon_core.lib import (
+    Logger,
+    run_detached_process,
+    get_ayon_launcher_args
+)
 
 
 class DeliveryTrayWrapper:

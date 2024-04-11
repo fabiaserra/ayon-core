@@ -7,7 +7,6 @@ import traceback
 from qtpy import QtCore, QtWidgets, QtGui
 import qtawesome
 
-import ayon_api
 from ayon_shotgrid.lib import credentials
 
 from ayon_core import style
@@ -15,7 +14,10 @@ from ayon_core import resources
 from ayon_core.lib import Logger
 from ayon_core.tools.utils import lib as tools_lib
 from ayon_core.modules.ingest.scripts import ingest
-
+from ayon_core.tools.utils import ProjectsCombobox
+from ayon_core.tools.context_dialog.window import (
+    ContextDialogController,
+)
 
 logger = Logger.get_logger(__name__)
 HEADER_NAME_ROLE = QtCore.Qt.UserRole + 510
@@ -33,7 +35,7 @@ class BatchIngester(QtWidgets.QDialog):
 
     DEFAULT_WIDTHS = (
         ("path", 1000),
-        ("folder_path", 120),
+        ("folder_path", 150),
         ("task", 120),
         ("product_type", 120),
         ("product_name", 120),
@@ -41,13 +43,11 @@ class BatchIngester(QtWidgets.QDialog):
         ("version", 120)
     )
 
-    def __init__(self, module, parent=None):
+    def __init__(self, parent=None):
         super(BatchIngester, self).__init__(parent)
 
         self.setWindowTitle(self.tool_title)
-
-        self._module = module
-
+        
         icon = QtGui.QIcon(resources.get_openpype_icon_filepath())
         self.setWindowIcon(icon)
 
@@ -68,6 +68,8 @@ class BatchIngester(QtWidgets.QDialog):
         self._current_proj_name = None
         self._current_proj_code = None
 
+        self._controller = ContextDialogController()
+
         self.ui_init()
 
     def ui_init(self):
@@ -81,10 +83,10 @@ class BatchIngester(QtWidgets.QDialog):
         input_layout.setContentsMargins(5, 5, 5, 5)
 
         # Project combobox
-        projects_combobox = QtWidgets.QComboBox()
-        combobox_delegate = QtWidgets.QStyledItemDelegate(self)
-        projects_combobox.setItemDelegate(combobox_delegate)
-        projects_combobox.currentTextChanged.connect(self.on_project_change)
+        projects_combobox = ProjectsCombobox(self._controller, input_widget)
+        projects_combobox.set_select_item_visible(True)
+        projects_combobox.set_active_filter_enabled(True)
+        projects_combobox.selection_changed.connect(self.on_project_change)
         input_layout.addRow("Project", projects_combobox)
 
         file_browser = FileBrowserWidget()
@@ -218,73 +220,13 @@ class BatchIngester(QtWidgets.QDialog):
             self.setStyleSheet(style.load_stylesheet())
             tools_lib.center_window(self)
 
-        if not self._initial_refresh:
-            self._initial_refresh = True
-            self.refresh()
-
-    def _refresh(self):
-        if not self._initial_refresh:
-            self._initial_refresh = True
-        self._set_projects()
-
-    def _set_projects(self):
-        # Store current project
-        old_project_name = self.current_project
-
-        self._ignore_project_change = True
-
-        # Cleanup
-        self._projects_combobox.clear()
-
-        # Fill combobox with projects
-        select_project_item = QtGui.QStandardItem("< Select project >")
-        select_project_item.setData(None, QtCore.Qt.UserRole + 1)
-
-        combobox_items = [select_project_item]
-
-        project_names = self.get_filtered_projects()
-
-        for project_name in sorted(project_names):
-            item = QtGui.QStandardItem(project_name)
-            item.setData(project_name, QtCore.Qt.UserRole + 1)
-            combobox_items.append(item)
-
-        root_item = self._projects_combobox.model().invisibleRootItem()
-        root_item.appendRows(combobox_items)
-
-        index = 0
-        self._ignore_project_change = False
-
-        if old_project_name:
-            index = self._projects_combobox.findText(
-                old_project_name, QtCore.Qt.MatchFixedString
-            )
-
-        self._projects_combobox.setCurrentIndex(index)
-
-    @property
-    def current_project(self):
-        return self.dbcon.active_project() or None
-
-    def get_filtered_projects(self):
-        projects = list()
-        for project in ayon_api.get_projects(
-            fields=["name", "data.active", "data.library_project"]
-        ):
-            is_active = project.get("data", {}).get("active", False)
-            is_library = project.get("data", {}).get("library_project", False)
-            if is_active or is_library:
-                projects.append(project["name"])
-
-        return projects
+        self._projects_combobox.refresh()
 
     def on_project_change(self):
         if self._ignore_project_change:
             return
 
-        row = self._projects_combobox.currentIndex()
-        index = self._projects_combobox.model().index(row, 0)
-        project_name = index.data(QtCore.Qt.UserRole + 1)
+        project_name = self._controller.get_selected_project_name()
 
         sg = credentials.get_shotgrid_session()
         sg_project = sg.find_one(
@@ -293,7 +235,6 @@ class BatchIngester(QtWidgets.QDialog):
             fields=["sg_code"]
         )
 
-        project_name = self.dbcon.active_project() or "No project selected"
         title = "{} - {}".format(self.tool_title, project_name)
         self.setWindowTitle(title)
 
@@ -315,11 +256,8 @@ class BatchIngester(QtWidgets.QDialog):
             logger.error(msg)
             self.set_message(msg)
             return
-
-        row = self._projects_combobox.currentIndex()
-        index = self._projects_combobox.model().index(row, 0)
-        project_name = index.data(QtCore.Qt.UserRole + 1)
-        if not project_name:
+        
+        if not self._current_proj_name:
             msg = "Must select a project first."
             logger.error(msg)
             self.set_message(msg)
@@ -327,7 +265,7 @@ class BatchIngester(QtWidgets.QDialog):
 
         products = ingest.get_products_from_filepath(
             filepath,
-            project_name,
+            self._current_proj_name,
             self._current_proj_code
         )
         self._model.set_products(products)
@@ -394,13 +332,6 @@ class BatchIngester(QtWidgets.QDialog):
                 txt += "{}<br>".format(item)
 
         return txt
-
-    # -------------------------------
-    # Delay calling blocking methods
-    # -------------------------------
-
-    def refresh(self):
-        tools_lib.schedule(self._refresh, 50, channel="mongo")
 
 
 class FileBrowserWidget(QtWidgets.QWidget):

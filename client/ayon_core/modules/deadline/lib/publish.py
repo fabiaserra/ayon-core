@@ -2,6 +2,8 @@ import os
 import getpass
 import json
 
+import ayon_api
+
 from ayon_core.lib import Logger, path_tools
 from ayon_core.pipeline import Anatomy
 from ayon_core.pipeline.template_data import get_template_data
@@ -66,8 +68,10 @@ def check_task_exists(project_name, folder_entity, task_name, force_creation=Fal
         logger.debug("Creating task '%s' in asset '%s'", task_name, folder_entity["name"])
         sg = credentials.get_shotgrid_session()
         sg_project = sg.find_one("Project", [["name", "is", project_name]], ["code"])
-        sg_entity_type = folder_entity["data"].get("sgEntityType") or "Shot"
-        sg_entity = sg.find_one(sg_entity_type, [["code", "is", folder_entity["name"]]], ["code"])
+        sg_entity_type = folder_entity.get("folder_type") or "Shot"
+        sg_entity = sg.find_one(sg_entity_type, [["id", "is", int(folder_entity["attrib"]["shotgridId"])]], ["code"])
+        if not sg_entity:
+            return False
         populate_tasks.add_tasks_to_sg_entities(
             sg_project,
             [sg_entity],
@@ -111,7 +115,7 @@ def validate_version(
         logger.error(msg)
         return msg, False
 
-    folder_entity = ayon_api.get_folder_by_name(project_name, folder_path, fields=["id", "data", "name"])
+    folder_entity = ayon_api.get_folder_by_path(project_name, folder_path)
     context_data = folder_entity["data"]
 
     # Validate that the version doesn't exist if we choose to not overwrite
@@ -200,8 +204,8 @@ def publish_version(
         logger.error(msg)
         return msg, False
 
-    folder_entity = ayon_api.get_folder_by_name(
-        project_name, folder_path, fields=["id", "data", "name"]
+    folder_entity = ayon_api.get_folder_by_path(
+        project_name, folder_path
     )
     context_data = folder_entity["data"]
 
@@ -268,10 +272,8 @@ def publish_version(
         return msg, False
 
     # Get project code to grab the project code and add it to the task name
-    project_doc = ayon_api.get_project(
-        project_name, fields=["data.code", "config.tasks"]
-    )
-    project_code = project_doc["data"]["code"]
+    project_entity = ayon_api.get_project(project_name)
+    project_code = project_entity["code"]
 
     deadline_task_name = "Publish {} - {}{} - {} - {} - {} ({})".format(
         product_type,
@@ -284,8 +286,11 @@ def publish_version(
     )
 
     # Fill instance data with anatomyData
+    task_entity = ayon_api.get_task_by_name(
+        project_name, folder_entity["id"], task_name
+    )
     anatomy_data = get_template_data(
-        project_doc, folder_entity, task_name
+        project_entity, folder_entity, task_entity
     )
     instance_data["anatomyData"] = anatomy_data
 

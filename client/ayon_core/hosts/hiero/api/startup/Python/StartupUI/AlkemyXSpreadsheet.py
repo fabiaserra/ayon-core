@@ -733,7 +733,7 @@ class CustomSpreadsheetColumns(QObject):
             # Asset is track item name
             folder_name = item.name()
             folder_entity = ayon_api.get_folder_by_name(
-                project_name, folder_name, fields={"id"}
+                project_name, folder_name
             )
             # Subset is track name
             product_name = item.parentTrack().name()

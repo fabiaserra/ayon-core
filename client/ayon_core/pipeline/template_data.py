@@ -235,17 +235,6 @@ def get_template_data_with_names(
         folder_entity = ayon_api.get_folder_by_path(
             project_name,
             folder_path,
-            ### Starts Alkemy-X Override ###
-            # Add some extra fields required for being able to call
-            # context_tools.get_hierarchy_env on get_template_data
-            fields=[
-                "name",
-                "data.parents",
-                "data.tasks",
-                "data.visualParent",
-                "data.sgEntityType"
-            ]
-            ### Ends Alkemy-X Override ###
         )
         if task_name and folder_entity:
             task_entity = ayon_api.get_task_by_name(

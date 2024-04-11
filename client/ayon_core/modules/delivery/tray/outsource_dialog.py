@@ -4,14 +4,17 @@ import platform
 import traceback
 from qtpy import QtCore, QtWidgets, QtGui
 
-import ayon_api
 from ayon_shotgrid.lib import credentials
 
+from ayon_core import style
 from ayon_core import resources
 from ayon_core.lib import Logger
 from ayon_core.tools.utils import lib as tools_lib
 from ayon_core.modules.delivery.scripts import sg_delivery
-
+from ayon_core.tools.utils import ProjectsCombobox
+from ayon_core.tools.context_dialog.window import (
+    ContextDialogController,
+)
 
 logger = Logger.get_logger(__name__)
 
@@ -25,12 +28,10 @@ class OutsourceDialog(QtWidgets.QDialog):
     SIZE_W = 800
     SIZE_H = 400
 
-    def __init__(self, module, parent=None):
+    def __init__(self, parent=None):
         super(OutsourceDialog, self).__init__(parent)
 
         self.setWindowTitle(self.tool_title)
-
-        self._module = module
 
         icon = QtGui.QIcon(resources.get_openpype_icon_filepath())
         self.setWindowIcon(icon)
@@ -46,11 +47,12 @@ class OutsourceDialog(QtWidgets.QDialog):
         self.setMinimumSize(QtCore.QSize(self.SIZE_W, self.SIZE_H))
 
         self._first_show = True
-        self._initial_refresh = False
         self._ignore_project_change = False
 
         # Short code name for currently selected project
         self._current_proj_code = None
+
+        self._controller = ContextDialogController()
 
         self.ui_init()
 
@@ -65,10 +67,10 @@ class OutsourceDialog(QtWidgets.QDialog):
         input_layout.setContentsMargins(5, 5, 5, 5)
 
         # Project combobox
-        projects_combobox = QtWidgets.QComboBox()
-        combobox_delegate = QtWidgets.QStyledItemDelegate(self)
-        projects_combobox.setItemDelegate(combobox_delegate)
-        projects_combobox.currentTextChanged.connect(self.on_project_change)
+        projects_combobox = ProjectsCombobox(self._controller, input_widget)
+        projects_combobox.set_select_item_visible(True)
+        projects_combobox.set_active_filter_enabled(True)
+        projects_combobox.selection_changed.connect(self.on_project_change)
         input_layout.addRow("Project", projects_combobox)
 
         # SG input widgets
@@ -142,9 +144,7 @@ class OutsourceDialog(QtWidgets.QDialog):
             self.setStyleSheet(style.load_stylesheet())
             tools_lib.center_window(self)
 
-        if not self._initial_refresh:
-            self._initial_refresh = True
-            self.refresh()
+        self._projects_combobox.refresh()
 
     def _version_id_edited(self, text):
         # If there's a comma in the text, remove it and set the modified text
@@ -154,67 +154,11 @@ class OutsourceDialog(QtWidgets.QDialog):
         self._sg_version_id_input.setText(text)
         self._sg_version_btn.setChecked(True)
 
-    def _refresh(self):
-        if not self._initial_refresh:
-            self._initial_refresh = True
-        self._set_projects()
-
-    def _set_projects(self):
-        # Store current project
-        old_project_name = self.current_project
-
-        self._ignore_project_change = True
-
-        # Cleanup
-        self._projects_combobox.clear()
-
-        # Fill combobox with projects
-        select_project_item = QtGui.QStandardItem("< Select project >")
-        select_project_item.setData(None, QtCore.Qt.UserRole + 1)
-
-        combobox_items = [select_project_item]
-
-        project_names = self.get_filtered_projects()
-
-        for project_name in sorted(project_names):
-            item = QtGui.QStandardItem(project_name)
-            item.setData(project_name, QtCore.Qt.UserRole + 1)
-            combobox_items.append(item)
-
-        root_item = self._projects_combobox.model().invisibleRootItem()
-        root_item.appendRows(combobox_items)
-
-        index = 0
-        self._ignore_project_change = False
-
-        if old_project_name:
-            index = self._projects_combobox.findText(
-                old_project_name, QtCore.Qt.MatchFixedString
-            )
-
-        self._projects_combobox.setCurrentIndex(index)
-
-    @property
-    def current_project(self):
-        return self.dbcon.active_project() or None
-
-    def get_filtered_projects(self):
-        projects = list()
-        for project in ayon_api.get_projects(fields=["name", "data.active", "data.library_project"]):
-            is_active = project.get("data", {}).get("active", False)
-            is_library = project.get("data", {}).get("library_project", False)
-            if is_active and not is_library:
-                projects.append(project["name"])
-
-        return projects
-
     def on_project_change(self):
         if self._ignore_project_change:
             return
 
-        row = self._projects_combobox.currentIndex()
-        index = self._projects_combobox.model().index(row, 0)
-        project_name = index.data(QtCore.Qt.UserRole + 1)
+        project_name = self._controller.get_selected_project_name()
 
         sg = credentials.get_shotgrid_session()
         sg_project = sg.find_one(
@@ -223,15 +167,11 @@ class OutsourceDialog(QtWidgets.QDialog):
             ["sg_code"]
         )
 
-        project_name = self.dbcon.active_project() or "No project selected"
         title = "{} - {}".format(self.tool_title, project_name)
         self.setWindowTitle(title)
 
-        # Find project code from SG project and load config file if it exists
-        proj_code = sg_project.get("sg_code")
-
         # Store project code as class variable so we can reuse it throughout
-        self._current_proj_code = proj_code
+        self._current_proj_code = sg_project.get("sg_code")
 
         # Add existing playlists from project
         sg_playlists = sg.find(
@@ -289,13 +229,6 @@ class OutsourceDialog(QtWidgets.QDialog):
             success = False
 
         self._text_area.setText(self._format_report(report_items, success))
-
-    # -------------------------------
-    # Delay calling blocking methods
-    # -------------------------------
-
-    def refresh(self):
-        tools_lib.schedule(self._refresh, 50, channel="mongo")
 
 
 def main():

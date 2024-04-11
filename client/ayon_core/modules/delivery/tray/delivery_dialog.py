@@ -18,6 +18,7 @@ from ayon_core.tools.context_dialog.window import (
     ContextDialogController,
 )
 
+
 logger = Logger.get_logger(__name__)
 
 
@@ -61,14 +62,10 @@ class DeliveryDialog(QtWidgets.QDialog):
         {delivery_type}: Type of delivery output ("review" or "final")
     """
 
-    def __init__(self, module, parent=None):
+    def __init__(self, parent=None):
         super(DeliveryDialog, self).__init__(parent)
 
         self.setWindowTitle(self.tool_title)
-
-        self._module = module
-
-        self._controller = ContextDialogController()
 
         icon = QtGui.QIcon(resources.get_openpype_icon_filepath())
         self.setWindowIcon(icon)
@@ -84,11 +81,12 @@ class DeliveryDialog(QtWidgets.QDialog):
         self.setMinimumSize(QtCore.QSize(self.SIZE_W, self.SIZE_H))
 
         self._first_show = True
-        self._initial_refresh = False
         self._ignore_project_change = False
 
         # Short code name for currently selected project
         self._current_proj_code = None
+
+        self._controller = ContextDialogController()
 
         self.ui_init()
 
@@ -105,7 +103,7 @@ class DeliveryDialog(QtWidgets.QDialog):
         # Project combobox
         projects_combobox = ProjectsCombobox(self._controller, input_widget)
         projects_combobox.set_select_item_visible(True)
-        projects_combobox.set_standard_filter_enabled(True)
+        projects_combobox.set_active_filter_enabled(True)
         projects_combobox.selection_changed.connect(self.on_project_change)
         input_layout.addRow("Project", projects_combobox)
 
@@ -331,9 +329,7 @@ class DeliveryDialog(QtWidgets.QDialog):
             self.setStyleSheet(style.load_stylesheet())
             tools_lib.center_window(self)
 
-        if not self._initial_refresh:
-            self._initial_refresh = True
-            self.refresh()
+        self._projects_combobox.refresh()
 
     def _version_id_edited(self, text):
         # If there's a comma in the text, remove it and set the modified text
@@ -343,69 +339,11 @@ class DeliveryDialog(QtWidgets.QDialog):
         self._sg_version_id_input.setText(text)
         self._sg_version_btn.setChecked(True)
 
-    def _refresh(self):
-        if not self._initial_refresh:
-            self._initial_refresh = True
-        self._set_projects()
-
-    def _set_projects(self):
-        # Store current project
-        old_project_name = self.current_project
-
-        self._ignore_project_change = True
-
-        # Cleanup
-        self._projects_combobox.clear()
-
-        # Fill combobox with projects
-        select_project_item = QtGui.QStandardItem("< Select project >")
-        select_project_item.setData(None, QtCore.Qt.UserRole + 1)
-
-        combobox_items = [select_project_item]
-
-        project_names = self.get_filtered_projects()
-
-        for project_name in sorted(project_names):
-            item = QtGui.QStandardItem(project_name)
-            item.setData(project_name, QtCore.Qt.UserRole + 1)
-            combobox_items.append(item)
-
-        root_item = self._projects_combobox.model().invisibleRootItem()
-        root_item.appendRows(combobox_items)
-
-        index = 0
-        self._ignore_project_change = False
-
-        if old_project_name:
-            index = self._projects_combobox.findText(
-                old_project_name, QtCore.Qt.MatchFixedString
-            )
-
-        self._projects_combobox.setCurrentIndex(index)
-
-    @property
-    def current_project(self):
-        row = self._projects_combobox.currentIndex()
-        index = self._projects_combobox.model().index(row, 0)
-        return index.data(QtCore.Qt.UserRole + 1)
-
-    def get_filtered_projects(self):
-        projects = list()
-        for project in ayon_api.get_projects(fields=["name", "data.active", "data.library_project"]):
-            is_active = project.get("data", {}).get("active", False)
-            is_library = project.get("data", {}).get("library_project", False)
-            if is_active and not is_library:
-                projects.append(project["name"])
-
-        return projects
-
     def on_project_change(self):
         if self._ignore_project_change:
             return
 
         project_name = self._controller.get_selected_project_name()
-
-        delivery_types = ["review", "final"]
 
         sg = credentials.get_shotgrid_session()
         sg_project = sg.find_one(
@@ -413,6 +351,8 @@ class DeliveryDialog(QtWidgets.QDialog):
             [["name", "is", project_name]],
             delivery.SG_DELIVERY_OUTPUT_FIELDS + ["sg_code"]
         )
+
+        delivery_types = ["review", "final"]
         project_overrides = delivery.get_entity_overrides(
             sg,
             sg_project,
@@ -615,13 +555,6 @@ class DeliveryDialog(QtWidgets.QDialog):
 
     def _on_save_config_clicked(self):
         self._save_project_config()
-
-    # -------------------------------
-    # Delay calling blocking methods
-    # -------------------------------
-
-    def refresh(self):
-        tools_lib.schedule(self._refresh, 50, channel="mongo")
 
 
 class DeliveryOutputsWidget(QtWidgets.QWidget):

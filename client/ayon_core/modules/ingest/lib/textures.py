@@ -45,8 +45,10 @@ def guess_colorspace(filepath):
     source_files, _, _, _ = path_tools.convert_to_sequence(
         filepath
     )
+    if not source_files:
+        return
+    
     single_file = source_files[0]
-
     try:
         img_info = get_oiio_info_for_input(single_file)
     except RuntimeError:

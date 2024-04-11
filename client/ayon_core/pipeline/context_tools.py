@@ -623,7 +623,7 @@ def get_process_id():
 
 
 ### Starts Alkemy-X Override ###
-def get_hierarchy_env(project_doc, asset_doc, skip_empty=True):
+def get_hierarchy_env(project_entity, folder_entity, skip_empty=True):
     """Returns an environment dictionary based on the hierarchy of an asset in a project
 
     The environment dictionary contains keys representing the different levels of the
@@ -631,8 +631,8 @@ def get_hierarchy_env(project_doc, asset_doc, skip_empty=True):
     values, if available.
 
     Args:
-        project_doc (dict): A dictionary containing metadata about the project.
-        asset_doc (dict): A dictionary containing metadata about the asset.
+        project_entity (dict): A dictionary containing metadata about the project.
+        folder_entity (dict): A dictionary containing metadata about the asset.
         skip_empty (bool): Whether to skip env entries that we don't have a value for.
 
     Returns:
@@ -643,11 +643,11 @@ def get_hierarchy_env(project_doc, asset_doc, skip_empty=True):
             if 'skip_empty' is set to False.
 
     """
-    visual_hierarchy = [asset_doc]
-    current_doc = asset_doc
-    project_name = project_doc["name"]
+    visual_hierarchy = [folder_entity]
+    current_doc = folder_entity
+    project_name = project_entity["name"]
     while True:
-        visual_parent_id = current_doc["data"]["visualParent"]
+        visual_parent_id = current_doc["parentId"]
         visual_parent = None
         if visual_parent_id:
             visual_parent = ayon_api.get_folder_by_id(project_name, visual_parent_id)
@@ -658,9 +658,9 @@ def get_hierarchy_env(project_doc, asset_doc, skip_empty=True):
         visual_hierarchy.append(visual_parent)
         current_doc = visual_parent
 
-    # Dictionary that maps the SG entity names from SG-leecher to their corresponding
+    # Dictionary that maps the folder entity type names to their corresponding
     # environment variables
-    sg_to_env_map = {
+    type_to_env = {
         "Project": "SHOW",
         "Season": "SEASON",
         "Episode": "EPISODE",
@@ -672,7 +672,7 @@ def get_hierarchy_env(project_doc, asset_doc, skip_empty=True):
     # We create a default env with None values so when we switch context, we can remove
     # the environment variables that aren't defined
     env = {
-        "SHOW": project_doc["data"]["code"],
+        "SHOW": project_entity["code"],
         "SEASON": None,
         "EPISODE": None,
         "SEQ": None,
@@ -683,8 +683,8 @@ def get_hierarchy_env(project_doc, asset_doc, skip_empty=True):
 
     # For each entity on the hierarchy, we set its environment variable
     for parent in visual_hierarchy:
-        sg_entity_type = parent["data"].get("shotgridType")
-        env_key = sg_to_env_map.get(sg_entity_type)
+        folder_type = parent["folderType"]
+        env_key = type_to_env.get(folder_type)
         if env_key:
             env[env_key] = parent["name"]
 

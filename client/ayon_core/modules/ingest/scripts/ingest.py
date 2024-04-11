@@ -146,9 +146,6 @@ TASK_NAME_FALLBACK = "edit"
 # project root folder
 SHOW_MATCH_RE = re.compile(r"/proj/(?P<show>\w+)")
 
-# Fields we want to query from AYON folders
-FOLDER_FIELDS = ["name", "data.tasks", "data.parents"]
-
 # Regular expression to match package name to extract vendor code
 VENDOR_PACKAGE_RE = r"From_(\w+)"
 
@@ -184,11 +181,11 @@ def validate_products(
     # representations dictionary for the products that target the same product_name
     products = {}
     for product_item in products_data:
-        item_str = f"{product_item.folder} - {product_item.task} - {product_item.product_type} - {product_item.product_name}"
+        item_str = f"{product_item.folder_path} - {product_item.task} - {product_item.product_type} - {product_item.product_name}"
         logger.debug(item_str)
 
         key = (
-            product_item.folder,
+            product_item.folder_path,
             product_item.task,
             product_item.product_name
         )
@@ -219,10 +216,10 @@ def validate_products(
             products[key]["expected_representations"][product_item.rep_name] = product_item.path
 
     for product_fields, product_data in products.items():
-        folder, task, product_name = product_fields
+        folder_path, task, product_name = product_fields
         msg, success = publish.validate_version(
             project_name,
-            folder,
+            folder_path,
             task,
             product_data["product_type"],
             product_name,
@@ -267,11 +264,11 @@ def publish_products(
     # representations dictionary for the products that target the same product_name
     products = {}
     for product_item in products_data:
-        item_str = f"{product_item.folder} - {product_item.task} - {product_item.product_type} - {product_item.product_name}"
+        item_str = f"{product_item.folder_path} - {product_item.task} - {product_item.product_type} - {product_item.product_name}"
         logger.debug(item_str)
 
         key = (
-            product_item.folder,
+            product_item.folder_path,
             product_item.task,
             product_item.product_type,
             product_item.product_name
@@ -301,11 +298,11 @@ def publish_products(
     logger.debug("Flattened products: %s", products)
 
     for product_fields, product_data in products.items():
-        folder, task, product_type, product_name = product_fields
+        folder_path, task_name, product_type, product_name = product_fields
         msg, success = publish.publish_version(
             project_name,
-            folder,
-            task,
+            folder_path,
+            task_name,
             product_type,
             product_name,
             product_data["expected_representations"],
@@ -334,15 +331,14 @@ def get_products_from_filepath(package_path, project_name, project_code):
             result += c.lower()
         return result
 
-    folder_paths = [
-        folder_entity["name"] for folder_entity in ayon_api.get_folders(project_name, fields=["name"])
-        if folder_entity["name"] not in {"folders", "shots"}
+    folder_names = [
+        folder_entity["name"] for folder_entity in ayon_api.get_folders(project_name)
     ]
 
     # Reverse to give priority to the more specific folder names as the higher level ones
     # (i.e., episode, sequence) are pretty easy to match against
-    folder_paths.reverse()
-    folders_re = "|".join(folder_paths)
+    folder_names.reverse()
+    folders_re = "|".join(folder_names)
     strict_regex_str = STRICT_FILENAME_RE_STR.format(shot_codes=folders_re)
     strict_regex = re.compile(
         strict_regex_str, re.IGNORECASE
@@ -386,7 +382,7 @@ def get_products_from_filepath(package_path, project_name, project_code):
                 project_code,
                 filepath,
                 strict_regex,
-                folder_paths,
+                folder_names,
             )
             if not publish_data:
                 continue
@@ -423,7 +419,7 @@ def get_products_from_filepath(package_path, project_name, project_code):
 
 
 def get_product_from_filepath(
-    project_name, project_code, filepath, strict_regex, folder_paths
+    project_name, project_code, filepath, strict_regex, folder_names
 ):
     """Given a filepath, try to extract the publish data from it"""
     filename = os.path.basename(filepath)
@@ -471,7 +467,7 @@ def get_product_from_filepath(
             filepath
         )
         folder_entity, found_name = parse_containing(
-            project_name, project_code, filepath, folder_paths
+            project_name, project_code, filepath, folder_names
         )
         if folder_entity:
             logger.debug(
@@ -615,51 +611,49 @@ def get_product_from_filepath(
     # If extension is an image, guess input colorspace
     if extension in IMAGE_EXTENSIONS:
         in_colorspace = textures.guess_colorspace(filepath)
-        if in_colorspace is None:
-            return
-
-        publish_data["in_colorspace"] = in_colorspace
+        if in_colorspace:
+            publish_data["in_colorspace"] = in_colorspace
 
     logger.debug("Publish data for filepath %s: %s", filepath, publish_data)
 
     return publish_data
 
 
-def get_folder_by_name_case_not_sensitive(project_name, folder_path):
+def get_folder_by_name_case_not_sensitive(project_name, folder_name):
     """Get folder by name ignoring case"""
     # NOTE: This is not supported yet in Ayon
-    # folder_path = re.compile(folder_path, re.IGNORECASE)
+    # folder_name = re.compile(folder_name, re.IGNORECASE)
 
     folders = list(
-        ayon_api.get_folders(project_name, folder_paths=[folder_path], fields=FOLDER_FIELDS)
+        ayon_api.get_folders(project_name, folder_names=[folder_name])
     )
     if folders:
         if len(folders) > 1:
             logger.warning(
-                "Too many records found for {}, using first.".format(folder_path)
+                "Too many records found for {}, using first.".format(folder_name)
             )
 
         return folders.pop()
 
 
-def parse_containing(project_name, project_code, filepath, folder_paths):
+def parse_containing(project_name, project_code, filepath, folder_names):
     """Parse filepath to find folder name"""
-    logger.debug("Looking for any folder names '%s' in filepath '%s'", folder_paths, filepath)
-    for folder_path in folder_paths:
-        if folder_path.lower() in filepath.lower():
+    logger.debug("Looking for any folder names '%s' in filepath '%s'", folder_names, filepath)
+    for folder_name in folder_names:
+        if folder_name.lower() in filepath.lower():
             return ayon_api.get_folder_by_name(
-                project_name, folder_path, fields=FOLDER_FIELDS
-            ), folder_path.lower()
+                project_name, folder_name
+            ), folder_name.lower()
 
     # If we haven't find it yet check folder name without project code
-    for folder_path in folder_paths:
-        if folder_path.lower().startswith(project_code.lower()):
+    for folder_name in folder_names:
+        if folder_name.lower().startswith(project_code.lower()):
             # Remove the project code + "_" from the folder name
-            short_folder_path = folder_path[len(project_code)+1:]
-            if short_folder_path in filepath.lower():
+            short_folder_name = folder_name[len(project_code)+1:]
+            if short_folder_name in filepath.lower():
                 return ayon_api.get_folder_by_name(
-                    project_name, folder_path, fields=FOLDER_FIELDS
-                ), short_folder_path
+                    project_name, folder_name
+                ), short_folder_name
         else:
             logger.warning(
                 "Assets aren't starting with project code %s", project_code

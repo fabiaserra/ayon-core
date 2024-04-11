@@ -48,6 +48,19 @@ def ingest_folder_path(
         folder_path
     )
 
+@click.command("launch_batch_ingester")
+def launch_batch_ingester():
+    """Launch batch ingester tool UI."""
+    from ayon_core.modules.ingest.tray import batch_ingester
+    batch_ingester.main()
+
+
+@click.command("launch_texture_publisher")
+def launch_texture_publisher():
+    """Launch Outsource Delivery tool UI."""
+    from ayon_core.modules.ingest.tray import texture_publisher
+    texture_publisher.main()
+
 
 @click.group(IngestModule.name, help="Ingest CLI")
 def cli_main():
@@ -55,16 +68,9 @@ def cli_main():
 
 
 cli_main.add_command(ingest_folder_path)
+cli_main.add_command(launch_batch_ingester)
+cli_main.add_command(launch_texture_publisher)
 
 
 if __name__ == "__main__":
     cli_main()
-
-
-# Examples:
-# /proj/uni/io/incoming/20230926/From_rotomaker/A/uni_pg_0430_plt_01_roto_output_v001
-# /proj/uni/io/incoming/20230926/From_rotomaker/A/uni_pg_0440_plt_01_roto_output_v001
-# /proj/uni/io/incoming/20230926/From_rotomaker/C/uni_pg_0380_denoise_dn_plt_01_v004_paint_v001
-# /proj/uni/io/incoming/20230926/From_rotomaker/C/workfile/uni_pg_0380_denoise_dn_plt_01_v004_paint_v001_workfile
-# /proj/uni/io/incoming/20230928/B/uni_ci_4088_plt_01_v001_MM_v001
-# /proj/uni/io/incoming/20230928/B/uni_ci_4098_plt_01_v001_MM_v001
