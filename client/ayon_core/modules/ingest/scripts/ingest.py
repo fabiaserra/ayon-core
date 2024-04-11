@@ -48,6 +48,7 @@ EXT_TO_REP_NAME = {
 # for example have .abc as extension too)
 FAMILY_EXTS_MAP = {
     "render": {".exr", ".dpx", ".tif", ".tiff", ".jpg", ".jpeg"},
+    "plate": {".exr"},
     "pointcache": {".abc"},
     "camera": {".abc", ".fbx"},
     "reference": {".mov", ".mp4", ".mxf", ".avi", ".wmv"},
@@ -335,9 +336,6 @@ def get_products_from_filepath(package_path, project_name, project_code):
         folder_entity["name"] for folder_entity in ayon_api.get_folders(project_name)
     ]
 
-    # Reverse to give priority to the more specific folder names as the higher level ones
-    # (i.e., episode, sequence) are pretty easy to match against
-    folder_names.reverse()
     folders_re = "|".join(folder_names)
     strict_regex_str = STRICT_FILENAME_RE_STR.format(shot_codes=folders_re)
     strict_regex = re.compile(

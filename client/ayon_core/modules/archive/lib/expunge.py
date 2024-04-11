@@ -33,17 +33,17 @@ from . import const
 # lower numbers is less caution, higher numbers for files we want to be more careful about
 # deleting
 WARNING_THRESHOLDS = {
-    0: datetime.today() - timedelta(days=3),
-    1: datetime.today() - timedelta(days=5),
-    2: datetime.today() - timedelta(days=10),
+    0: datetime.today() - timedelta(days=2),
+    1: datetime.today() - timedelta(days=3),
+    2: datetime.today() - timedelta(days=8),
 }
 
 # Thresholds to keep files marked for deletion before they get deleted
 # lower numbers is less caution, higher numbers for files we want to be more careful about
 # deleting
 DELETE_THRESHOLDS = {
-    0: timedelta(days=5),
-    1: timedelta(days=7),
+    0: timedelta(days=2),
+    1: timedelta(days=5),
     2: timedelta(days=10)
 }
 
@@ -796,9 +796,9 @@ class ArchiveProject:
         # that are older than our threshold and the number of caution
         # of removal to take for each
         folders_to_clean = {
-            "backup": 0,
-            "ifd": 0,
-            "ifds": 0,
+            "backup": 1,
+            "ifd": 1,
+            "ifds": 1,
             "temp_transcode": 0,
             "nuke_review_script": 0,
         }
