@@ -68,7 +68,7 @@ def check_task_exists(project_name, folder_entity, task_name, force_creation=Fal
         logger.debug("Creating task '%s' in asset '%s'", task_name, folder_entity["name"])
         sg = credentials.get_shotgrid_session()
         sg_project = sg.find_one("Project", [["name", "is", project_name]], ["code"])
-        sg_entity_type = folder_entity.get("folder_type") or "Shot"
+        sg_entity_type = folder_entity["folderType"]
         sg_entity = sg.find_one(sg_entity_type, [["id", "is", int(folder_entity["attrib"]["shotgridId"])]], ["code"])
         if not sg_entity:
             return False
