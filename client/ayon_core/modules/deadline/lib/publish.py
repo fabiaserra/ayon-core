@@ -116,6 +116,13 @@ def validate_version(
         return msg, False
 
     folder_entity = ayon_api.get_folder_by_path(project_name, folder_path)
+    if not folder_entity:
+        msg = (
+            f"{item_str} -> Couldn't find folder in project with path {folder_path}, make sure it exists."
+        )
+        logger.error(msg)
+        return msg, False
+
     context_data = folder_entity["data"]
 
     # Validate that the version doesn't exist if we choose to not overwrite
@@ -204,9 +211,13 @@ def publish_version(
         logger.error(msg)
         return msg, False
 
-    folder_entity = ayon_api.get_folder_by_path(
-        project_name, folder_path
-    )
+    folder_entity = ayon_api.get_folder_by_path(project_name, folder_path)
+    if not folder_entity:
+        msg = (
+            f"{item_str} -> Couldn't find folder in project with path {folder_path}, make sure it exists."
+        )
+        logger.error(msg)
+        return msg, False
     context_data = folder_entity["data"]
 
     # Validate that the version doesn't exist if we choose to not overwrite
