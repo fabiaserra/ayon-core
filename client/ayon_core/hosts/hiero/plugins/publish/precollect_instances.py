@@ -92,10 +92,6 @@ class PrecollectInstances(pyblish.api.ContextPlugin):
 
             folder_path, folder_name = self._get_folder_data(tag_data)
 
-            product_name = tag_data.get("productName")
-            if product_name is None:
-                product_name = tag_data["subset"]
-
             # insert family into families
             ### Starts Alkemy-X Override ###
             # Hard-code the addition of `.farm` suffix to the families so plugins get
@@ -156,9 +152,7 @@ class PrecollectInstances(pyblish.api.ContextPlugin):
 
                 # add all additional tags
                 "tags": phiero.get_track_item_tags(track_item),
-                "newAssetPublishing": True,
-                "toBeRenderedOn": "deadline",
-                "farm": submit_to_farm,
+                "newAssetPublishing": True
             })
 
             # otio clip data
@@ -180,11 +174,10 @@ class PrecollectInstances(pyblish.api.ContextPlugin):
                 }
             })
 
-            ### Starts Alkemy-X Override ###
-            # # create shot instance for shot attributes create/update
-            # self.create_shot_instance(context, **data)
-            # self.log.info("Creating instance: {}".format(instance))
-            ### Eds Alkemy-X Override ###
+            # create shot instance for shot attributes create/update
+            self.create_shot_instance(context, **data)
+
+            self.log.info("Creating instance: {}".format(instance))
             self.log.info(
                 "_ instance.data: {}".format(pformat(instance.data)))
 
