@@ -348,7 +348,7 @@ def get_products_from_filepath(package_path, project_name, project_code):
     for root, _, files in os.walk(package_path):
         # Create a list of all the collections of files and single files that
         # we find that could potentially be an ingestable product
-        collections, remainders = clique.assemble(files)
+        collections, remainders = clique.assemble(files, patterns=[clique.PATTERNS["frames"]])
         filepaths_frame_range = [
             (
                 os.path.join(root, collection.format("{head}{padding}{tail}")),
