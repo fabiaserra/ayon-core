@@ -74,6 +74,9 @@ FUZZY_NAME_OVERRIDES = {
     ("distortion", "distortion_node"): {
         "product_type": "distortion"
     },
+    ("render", ): {
+        "family_name": "render",
+    },
     ("_geo_", ): {
         "product_type": "pointcache",
     },
