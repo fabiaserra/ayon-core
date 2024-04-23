@@ -61,7 +61,6 @@ def check_version_exists(project_name, folder_entity, product_name, version):
 
 def check_task_exists(project_name, folder_entity, task_name, force_creation=False):
     """Check whether version document exists in database."""
-
     if force_creation:
         logger.debug("Creating task '%s' in asset '%s'", task_name, folder_entity["name"])
         sg = credentials.get_shotgrid_session()
@@ -76,7 +75,7 @@ def check_task_exists(project_name, folder_entity, task_name, force_creation=Fal
             sg_entity_type,
             tasks={task_name: task_name}
         )
-    elif task_name not in folder_entity.get("data", {}).get("tasks", {}):
+    elif task_name not in ayon_api.get_tasks_by_folder_path(folder_entity["path"]):
         return False
 
     return True
