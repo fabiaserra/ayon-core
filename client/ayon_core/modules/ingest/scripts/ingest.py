@@ -338,6 +338,8 @@ def get_products_from_filepath(package_path, project_name, project_code):
     folder_names = [
         folder_entity["name"] for folder_entity in ayon_api.get_folders(project_name)
     ]
+    # Reverse to give less priority to the more generic folders
+    folder_names.reverse()
 
     folders_re = "|".join(folder_names)
     strict_regex_str = STRICT_FILENAME_RE_STR.format(shot_codes=folders_re)
