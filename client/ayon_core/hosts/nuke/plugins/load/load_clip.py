@@ -128,17 +128,17 @@ class LoadClip(plugin.NukeLoader):
         self.log.debug(
             "Representation id `{}` ".format(repre_id))
 
-        self.handle_start = version_attributes.get("handleStart", 0)
-        self.handle_end = version_attributes.get("handleEnd", 0)
-
-        first = version_attributes.get("frameStart")
-        last = version_attributes.get("frameEnd")
-        first -= self.handle_start
-        last += self.handle_end
         ### Starts Alkemy-x override ###
+        self.handle_start = version_attributes.get("handleStart") or 0
+        self.handle_end = version_attributes.get("handleEnd") or 0
+
+        first = version_attributes.get("frameStart") or 1
+        last = version_attributes.get("frameEnd") or 1
         # Make sure first and last are integers
         first = int(first)
         last = int(last)
+        first -= self.handle_start
+        last += self.handle_end
 
         if not is_sequence:
             duration = last - first
@@ -342,12 +342,12 @@ class LoadClip(plugin.NukeLoader):
             or version_attributes.get("colorSpace")
         )
 
-        self.handle_start = version_attributes.get("handleStart", 0)
-        self.handle_end = version_attributes.get("handleEnd", 0)
-
-        first = version_attributes.get("frameStart")
-        last = version_attributes.get("frameEnd")
         ### Starts Alkemy-x override ###
+        self.handle_start = version_attributes.get("handleStart") or 0
+        self.handle_end = version_attributes.get("handleEnd") or 0
+
+        first = version_attributes.get("frameStart") or 1
+        last = version_attributes.get("frameEnd") or 1
         # Make sure first and last are integers
         first = int(first)
         last = int(last)
