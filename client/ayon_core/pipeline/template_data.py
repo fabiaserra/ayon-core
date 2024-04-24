@@ -186,13 +186,13 @@ def get_template_data(
         ### Starts Alkemy-X Override ###
         # Set hierarchy context data to anatomy so we can use it on templates
         hierarchy_env = context_tools.get_hierarchy_env(project_entity, folder_entity)
-        hierarchy_pairs = {
-            "episode": hierarchy_env.get("EPISODE") or "",
-            "seq": hierarchy_env.get("SEQ") or "",
-            "shot": hierarchy_env.get("SHOT") or "",
-            "shotnum": hierarchy_env.get("SHOTNUM") or "",
-            "asset_type": hierarchy_env.get("ASSET_TYPE") or "",
-        }
+        hierarchy_pairs = {}
+        # Only add to hierarchy_pairs if the env does exist
+        for env_key in {"EPISODE", "SEQ", "SHOT", "SHOTNUM", "ASSET_TYPE"}:
+            env_value = hierarchy_env.get(env_key)
+            if not env_value:
+                continue
+            hierarchy_pairs[env_key.lower()] = env_value
         hierarchy_data = prepare_template_data(hierarchy_pairs)
         template_data.update(hierarchy_data)
         ### Ends Alkemy-X Override ###
