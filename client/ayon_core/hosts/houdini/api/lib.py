@@ -11,6 +11,7 @@ import six
 import ayon_api
 
 from ayon_core.lib import StringTemplate, env_value_to_bool
+from ayon_core.tools.utils import host_tools
 from ayon_core.settings import get_current_project_settings
 from ayon_core.pipeline import (
     Anatomy,
@@ -1154,7 +1155,7 @@ def prompt_reset_context():
     dialog.deleteLater()
 
 def launch_workfiles_app():
-    """Show workfiles tool on nuke launch.
+    """Show workfiles tool on Houdini launch.
 
     Trigger to show workfiles tool on application launch. Can be executed only
     once all other calls are ignored.
@@ -1182,4 +1183,4 @@ def launch_workfiles_app():
     #   does not exist yet.
     parent = get_main_window()
     on_top = not parent
-    show_workfiles(parent=parent, on_top=on_top)
+    host_tools.show_workfiles(parent=parent, on_top=on_top)
