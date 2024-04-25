@@ -74,6 +74,9 @@ FUZZY_NAME_OVERRIDES = {
     ("distortion", "distortion_node"): {
         "product_type": "distortion"
     },
+    ("render", ): {
+        "family_name": "render",
+    },
     ("_geo_", ): {
         "product_type": "pointcache",
     },
@@ -335,6 +338,8 @@ def get_products_from_filepath(package_path, project_name, project_code):
     folder_names = [
         folder_entity["name"] for folder_entity in ayon_api.get_folders(project_name)
     ]
+    # Reverse to give less priority to the more generic folders
+    folder_names.reverse()
 
     folders_re = "|".join(folder_names)
     strict_regex_str = STRICT_FILENAME_RE_STR.format(shot_codes=folders_re)
@@ -348,7 +353,7 @@ def get_products_from_filepath(package_path, project_name, project_code):
     for root, _, files in os.walk(package_path):
         # Create a list of all the collections of files and single files that
         # we find that could potentially be an ingestable product
-        collections, remainders = clique.assemble(files)
+        collections, remainders = clique.assemble(files, patterns=[clique.PATTERNS["frames"]])
         filepaths_frame_range = [
             (
                 os.path.join(root, collection.format("{head}{padding}{tail}")),

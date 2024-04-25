@@ -48,14 +48,23 @@ TAG_DATA_KEY_CONVERT = {
 }
 
 SG_TAG_ICONS = {
-    "retime": "icons:TagKronos.png",
+    "screen insert": "icons:SyncPush.png",
+    "re-time": "icons:TagKronos.png",
     "repo": "icons:ExitFullScreen.png",
-    "split": "icons:TimelineToolSlide.png",
-    "insert": "icons:SyncPush.png",
+    "split screen": "icons:TimelineToolSlide.png",
+    "flip/flop": "icons:TimelineToolSlide.png",
+    "insert element": "icons:SyncPush.png",
 }
 
 INGEST_EFFECTS = ["flip", "flop"]
-SG_TAGS = ["retime", "repo", "insert", "split"]
+SG_TAGS = [
+    "screen insert",
+    "re-time",
+    "repo",
+    "split screen",
+    "flip/flop",
+    "insert element"
+]
 
 HIERO_PREFERENCES = nuke.toNode("preferences")
 HIGHLIGHT_COLOR = QColor(

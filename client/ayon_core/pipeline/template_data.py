@@ -103,7 +103,10 @@ def get_folder_template_data(folder_entity, project_name):
     return {
         "folder": {
             "name": folder_name,
+            "path": path,
+            "type": folder_entity["folderType"],
         },
+        "assets_or_shots": "shots" if folder_entity["folderType"] != "Asset" else "assets",
         "asset": folder_name,
         "hierarchy": hierarchy,
         "parent": parent_name

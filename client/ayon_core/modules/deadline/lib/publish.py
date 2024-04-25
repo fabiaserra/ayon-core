@@ -36,9 +36,7 @@ IGNORE_LUT_FAMILIES = {
     "review",
 }
 
-TASKS_TO_IGNORE_REVIEW = {
-    "3dtrack"
-}
+TASKS_TO_IGNORE_REVIEW = {}
 
 
 def check_version_exists(project_name, folder_entity, product_name, version):
@@ -63,12 +61,11 @@ def check_version_exists(project_name, folder_entity, product_name, version):
 
 def check_task_exists(project_name, folder_entity, task_name, force_creation=False):
     """Check whether version document exists in database."""
-
     if force_creation:
         logger.debug("Creating task '%s' in asset '%s'", task_name, folder_entity["name"])
         sg = credentials.get_shotgrid_session()
         sg_project = sg.find_one("Project", [["name", "is", project_name]], ["code"])
-        sg_entity_type = folder_entity.get("folder_type") or "Shot"
+        sg_entity_type = folder_entity["folderType"]
         sg_entity = sg.find_one(sg_entity_type, [["id", "is", int(folder_entity["attrib"]["shotgridId"])]], ["code"])
         if not sg_entity:
             return False
@@ -78,7 +75,7 @@ def check_task_exists(project_name, folder_entity, task_name, force_creation=Fal
             sg_entity_type,
             tasks={task_name: task_name}
         )
-    elif task_name not in folder_entity.get("data", {}).get("tasks", {}):
+    elif task_name not in ayon_api.get_tasks_by_folder_path(folder_entity["path"]):
         return False
 
     return True
@@ -116,6 +113,13 @@ def validate_version(
         return msg, False
 
     folder_entity = ayon_api.get_folder_by_path(project_name, folder_path)
+    if not folder_entity:
+        msg = (
+            f"{item_str} -> Couldn't find folder in project with path {folder_path}, make sure it exists."
+        )
+        logger.error(msg)
+        return msg, False
+
     context_data = folder_entity["data"]
 
     # Validate that the version doesn't exist if we choose to not overwrite
@@ -204,9 +208,13 @@ def publish_version(
         logger.error(msg)
         return msg, False
 
-    folder_entity = ayon_api.get_folder_by_path(
-        project_name, folder_path
-    )
+    folder_entity = ayon_api.get_folder_by_path(project_name, folder_path)
+    if not folder_entity:
+        msg = (
+            f"{item_str} -> Couldn't find folder in project with path {folder_path}, make sure it exists."
+        )
+        logger.error(msg)
+        return msg, False
     context_data = folder_entity["data"]
 
     # Validate that the version doesn't exist if we choose to not overwrite
@@ -300,12 +308,19 @@ def publish_version(
     if add_review:
         anatomy = Anatomy(project_name)
 
+        review_repre = None
         for repre in representations:
-            if repre["ext"] not in review.GENERATE_REVIEW_EXTENSIONS:
-                continue
+            # Skip generating review if one of the repres is already
+            # a supported review extension
+            if repre["ext"] in review.VIDEO_EXTENSIONS:
+                review_repre = None
+                break
+            elif repre["ext"] in review.GENERATE_REVIEW_EXTENSIONS:
+                review_repre = repre
 
+        if review_repre:
             staging_dir = anatomy.fill_root(
-                repre["stagingDir"]
+                review_repre["stagingDir"]
             )
 
             # Set output colorspace default to 'shot_lut' unless it's a review/reference family
@@ -325,13 +340,13 @@ def publish_version(
             }
 
             # Create read path to pass to Nuke task
-            basename = repre["files"][0] if isinstance(repre["files"], list) else repre["files"]
+            basename = review_repre["files"][0] if isinstance(review_repre["files"], list) else review_repre["files"]
             read_path = os.path.join(staging_dir, basename)
             read_path = path_tools.replace_frame_number_with_token(read_path, "#", padding=True)
             logger.debug("Review read path: %s", read_path)
 
             # Create review output path
-            file_name = f"{repre['name']}_h264.mov"
+            file_name = f"{review_repre['name']}_h264.mov"
             output_path = os.path.join(
                 staging_dir,
                 file_name
@@ -345,8 +360,8 @@ def publish_version(
                 task_name,
                 read_path,
                 output_path,
-                repre["frameStart"],
-                repre["frameEnd"],
+                review_repre["frameStart"],
+                review_repre["frameEnd"],
                 review_data
             )
             job_submissions.append(response)
@@ -364,12 +379,6 @@ def publish_version(
                     "tags": ["shotgridreview"],
                 }
             )
-
-            # We force it to only generate a review for the first representation
-            # that supports it
-            # TODO: in the future we might want to improve this if it's common
-            # that we ingest multiple image representations
-            break
 
     instance_data["frameStart"] = int(representations[0]["frameStart"])
     instance_data["frameEnd"] = int(representations[0]["frameEnd"])

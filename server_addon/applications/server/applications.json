@@ -8,6 +8,26 @@
             "environment": "{\n  \"MAYA_DISABLE_CLIC_IPM\": \"Yes\",\n  \"MAYA_DISABLE_CIP\": \"Yes\",\n  \"MAYA_DISABLE_CER\": \"Yes\",\n  \"PYMEL_SKIP_MEL_INIT\": \"Yes\",\n  \"LC_ALL\": \"C\"\n}\n",
             "variants": [
                 {
+                    "name": "2025",
+                    "label": "2025",
+                    "executables": {
+                        "windows": [
+                            "C:\\Program Files\\Autodesk\\Maya2025\\bin\\maya.exe"
+                        ],
+                        "darwin": ["/Applications/Autodesk/maya2025/Maya.app"],
+                        "linux": [
+                            "/usr/autodesk/maya2025/bin/maya"
+                        ]
+                    },
+                    "arguments": {
+                        "windows": [],
+                        "darwin": [],
+                        "linux": []
+                    },
+                    "environment": "{\n  \"MAYA_VERSION\": \"2025\"\n}",
+                    "use_python_2": false
+                },
+                {
                     "name": "2024",
                     "label": "2024",
                     "executables": {
@@ -1250,6 +1270,29 @@
                     "environment": "{}"
                 }
             ]
+        },
+        "mari": {
+            "enabled": true,
+            "label": "Mari",
+            "icon": "{}/app_icons/mari.png",
+            "host_name": "mari",
+            "environment": {},
+            "variants": {
+                "6-01": {
+                    "use_python_2": false,
+                    "executables": {
+                        "windows": [],
+                        "darwin": [],
+                        "linux": ["{AX_SW_ROOT}/mari/6.0v1/Mari6.0v1/mari"]
+                    },
+                    "arguments": {
+                        "windows": [],
+                        "darwin": [],
+                        "linux": []
+                    },
+                    "environment": "{}"
+                }
+            }
         },
         "additional_apps": []
     }

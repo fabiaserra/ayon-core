@@ -565,7 +565,7 @@ class TexturesTableModel(QtCore.QAbstractTableModel):
             item = self.TextureRepresentation(
                 filepath,
                 publish_data.get("folder_path", ""),
-                "ldev",
+                "generic",
                 "textures",
                 publish_data.get("product_name", ""),
                 publish_data.get("in_colorspace", ""),
@@ -577,7 +577,26 @@ class TexturesTableModel(QtCore.QAbstractTableModel):
         self.endResetModel()
 
     def get_products(self):
-        return self._data
+        # Filter out products that don't have all the required fields set
+        # NOTE: we do the same inside the `ingest.py:publish_products` function
+        # without the `in_colorspace` key but in order to reuse the code
+        # without doing too many changes (as that code is used to publish other things
+        # than just textures) we are doing a pre-filtering here
+        products = []
+        for product_item in self._data:
+            key = (
+                product_item.folder_path,
+                product_item.task,
+                product_item.product_type,
+                product_item.product_name,
+                product_item.in_colorspace,
+            )
+            if not all(key):
+                continue
+            
+            products.append(product_item)
+
+        return products
 
 
 class ComboBoxDelegate(QtWidgets.QStyledItemDelegate):

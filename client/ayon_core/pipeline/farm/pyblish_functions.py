@@ -232,7 +232,7 @@ def create_skeleton_instance(
         families.append("review")
 
     instance_skeleton_data = {
-        "productType": product_type,
+        "productType": data["productType"],
         "productName": data["productName"],
         "families": families,
         "folderPath": data["folderPath"],

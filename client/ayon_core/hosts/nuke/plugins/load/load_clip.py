@@ -45,7 +45,7 @@ class LoadClip(plugin.NukeLoader):
         "prerender",
         "review",
     }
-    representations = ["*"]
+    representations = {"*"}
     extensions = set(
         ext.lstrip(".") for ext in IMAGE_EXTENSIONS.union(VIDEO_EXTENSIONS)
     )
@@ -128,17 +128,17 @@ class LoadClip(plugin.NukeLoader):
         self.log.debug(
             "Representation id `{}` ".format(repre_id))
 
-        self.handle_start = version_attributes.get("handleStart", 0)
-        self.handle_end = version_attributes.get("handleEnd", 0)
-
-        first = version_attributes.get("frameStart")
-        last = version_attributes.get("frameEnd")
-        first -= self.handle_start
-        last += self.handle_end
         ### Starts Alkemy-x override ###
+        self.handle_start = version_attributes.get("handleStart") or 0
+        self.handle_end = version_attributes.get("handleEnd") or 0
+
+        first = version_attributes.get("frameStart") or 1
+        last = version_attributes.get("frameEnd") or 1
         # Make sure first and last are integers
         first = int(first)
         last = int(last)
+        first -= self.handle_start
+        last += self.handle_end
 
         if not is_sequence:
             duration = last - first
@@ -208,8 +208,9 @@ class LoadClip(plugin.NukeLoader):
                 version_entity,
                 repre_entity
             )
-
-            if not is_sequence:
+            
+            product_entity = context["product"]
+            if product_entity["productType"] == "reference":
                 load_first_frame = version_data.get("frameStart", None)
                 load_handle_start = version_data.get("handleStart", None)
                 if load_first_frame and load_handle_start:
@@ -341,11 +342,17 @@ class LoadClip(plugin.NukeLoader):
             or version_attributes.get("colorSpace")
         )
 
-        self.handle_start = version_attributes.get("handleStart", 0)
-        self.handle_end = version_attributes.get("handleEnd", 0)
+        ### Starts Alkemy-x override ###
+        self.handle_start = version_attributes.get("handleStart") or 0
+        self.handle_end = version_attributes.get("handleEnd") or 0
 
-        first = version_attributes.get("frameStart")
-        last = version_attributes.get("frameEnd")
+        first = version_attributes.get("frameStart") or 1
+        last = version_attributes.get("frameEnd") or 1
+        # Make sure first and last are integers
+        first = int(first)
+        last = int(last)
+        ### Ends Alkemy-x override ###
+
         first -= self.handle_start
         last += self.handle_end
 
@@ -372,7 +379,18 @@ class LoadClip(plugin.NukeLoader):
                 repre_entity
             )
 
-            self._set_range_to_node(read_node, first, last, start_at_workfile)
+            ### Starts Alkemy-x override ###
+            product_entity = context["product"]
+            if product_entity["productType"] == "reference":
+                load_first_frame = version_data.get("frameStart", None)
+                load_handle_start = version_data.get("handleStart", None)
+                if load_first_frame and load_handle_start:
+                    start_frame = int(load_first_frame - load_handle_start)
+                else:
+                    start_frame = self.script_start
+
+                self._loader_shift(read_node, start_frame, start_at_workfile)
+            ### Ends Alkemy-x override ###
 
             updated_dict = {
                 "representation": repre_entity["id"],
