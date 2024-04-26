@@ -41,9 +41,9 @@ class TexturePublisher(QtWidgets.QDialog):
     DEFAULT_WIDTHS = (
         ("path", 1000),
         ("in_colorspace", 120),
-        ("folder_path", 150),
-        ("product_name", 120),
-        ("version", 120)
+        ("folder_path", 200),
+        ("product_name", 150),
+        ("version", 50)
     )
 
     def __init__(self, parent=None):
