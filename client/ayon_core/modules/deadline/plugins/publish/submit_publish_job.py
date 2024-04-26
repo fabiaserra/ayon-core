@@ -262,7 +262,7 @@ class ProcessSubmittedJobOnFarm(pyblish.api.InstancePlugin,
             # need each individual publish to have the AYON_FOLDER_PATH pointing
             # to the final destination context)
             # "AYON_FOLDER_PATH": instance.context.data["folderPath"],
-            "AYON_FOLDER_PATH": instance.context["folderPath"],
+            "AYON_FOLDER_PATH": instance.data["folderPath"],
             "AYON_TASK_NAME": task_name,
             ### Ends Alkemy-X Override ###
             "AYON_USERNAME": instance.context.data["user"],

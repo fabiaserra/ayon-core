@@ -139,7 +139,7 @@ def get_transferable_representations(instance, log=None):
 
     """
     if log is None:
-        log = Logger.getLogger(__name__)
+        log = Logger.get_logger(__name__)
 
     anatomy = instance.context.data["anatomy"]  # type: Anatomy
     to_transfer = []
@@ -192,7 +192,7 @@ def create_skeleton_instance(
 
     """
     if not log:
-        log = Logger.getLogger(__name__)
+        log = Logger.get_logger(__name__)
 
     context = instance.context
     data = instance.data.copy()
@@ -236,6 +236,7 @@ def create_skeleton_instance(
         "productName": data["productName"],
         "families": families,
         "folderPath": data["folderPath"],
+        "task": data["task"],
         "frameStart": time_data.start,
         "frameEnd": time_data.end,
         "handleStart": time_data.handle_start,
@@ -332,7 +333,7 @@ def prepare_representations(skeleton_data, exp_files, anatomy, aov_filter,
     collections, remainders = clique.assemble(exp_files)
 
     if not log:
-        log = Logger.getLogger(__name__)
+        log = Logger.get_logger(__name__)
 
     # create representation for every collected sequence
     for collection in collections:
@@ -506,10 +507,10 @@ def create_instances_for_aov(instance, skeleton, aov_filter,
 
     """
     if not log:
-        log = Logger.getLogger(__name__)
+        log = Logger.get_logger(__name__)
 
-    # we cannot attach AOVs to other subsets as we consider every
-    # AOV subset of its own.
+    # we cannot attach AOVs to other products as we consider every
+    # AOV products of its own.
     additional_color_data = {
         "renderProducts": instance.data["renderProducts"],
         "colorspaceConfig": instance.data["colorspaceConfig"],
@@ -585,7 +586,7 @@ def _create_instances_for_aov(
     exp_files = instance.data["expectedFiles"]
 
     if not log:
-        log = Logger.getLogger(__name__)
+        log = Logger.get_logger(__name__)
 
     instances = []
     # go through AOVs in expected files
@@ -610,13 +611,12 @@ def _create_instances_for_aov(
 
         # create subset name `familyTaskSubset_AOV`
         # TODO refactor/remove me
-        # family = skeleton["family"]
-        # if not subset.startswith(family):
+        # product_type = skeleton["productType"]
+        # if not s_product_name.startswith(product_type):
         #     group_name = '{}{}{}{}{}'.format(
-        #         family,
+        #         product_type,
         #         task[0].upper(), task[1:],
-        #         subset[0].upper(), subset[1:])
-        # else:
+        #         s_product_name[0].upper(), s_product_name[1:])
         group_name = s_product_name
 
         # if there are multiple cameras, we need to add camera name
@@ -811,7 +811,7 @@ def create_skeleton_instance_cache(instance, log=None):
     anatomy = instance.context.data["anatomy"]  # type: Anatomy
 
     if not log:
-        log = Logger.getLogger(__name__)
+        log = Logger.get_logger(__name__)
 
     # get time related data from instance (or context)
     time_data = get_time_data_from_instance_or_context(instance)
@@ -897,7 +897,7 @@ def prepare_cache_representations(skeleton_data, exp_files, anatomy, log=None):
     collections, remainders = clique.assemble(exp_files)
 
     if not log:
-        log = Logger.getLogger(__name__)
+        log = Logger.get_logger(__name__)
 
     # create representation for every collected sequence
     for collection in collections:
@@ -957,7 +957,7 @@ def create_instances_for_cache(instance, skeleton, log=None):
     exp_files = instance.data["expectedFiles"]
 
     if not log:
-        log = Logger.getLogger(__name__)
+        log = Logger.get_logger(__name__)
 
     instances = []
     # go through AOVs in expected files
@@ -1161,13 +1161,13 @@ def create_metadata_path(instance, anatomy, log=None):
     ### Starts Alkemy-X Override ###
     # Prefixing metadata file with timestamp and asset so the .json files are
     # unique and not overwrite each other. This is necessary because in Hiero
-    # we use the same working directory to publish multiple subsets at once
-    # and when the subset was called the same, it was overwriting the same file
+    # we use the same working directory to publish multiple products at once
+    # and when the product was called the same, it was overwriting the same file
     # over and over
     metadata_filename = "{}_{}_{}_metadata.json".format(
         datetime.datetime.now().strftime("%d%m%Y%H%M%S"),
         ins_data["anatomyData"]["folder"]["name"],
-        ins_data["subset"]
+        ins_data["productName"]
     )
     ### Ends Alkemy-X Override ###
 

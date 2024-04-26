@@ -2,7 +2,8 @@ import pyblish.api
 from ayon_core.pipeline.publish import PublishValidationError
 
 
-class ValidateVersion(pyblish.api.InstancePlugin):
+class ValidateVersion(pyblish.api.InstancePlugin,
+                      OptionalPyblishPluginMixin):
     """Validate instance version.
 
     AYON does not allow overwriting previously published versions.
