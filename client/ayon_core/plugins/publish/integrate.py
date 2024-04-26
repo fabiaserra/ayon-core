@@ -168,6 +168,7 @@ class IntegrateAsset(pyblish.api.InstancePlugin):
                 "blendScene",
                 "yeticacheUE",
                 "tycache",
+                "csv_ingest_file",
                 #### Starts Alkemy-X overrides ####
                 # Missing from OP TODO: create PR to add them
                 "mantra_rop",
