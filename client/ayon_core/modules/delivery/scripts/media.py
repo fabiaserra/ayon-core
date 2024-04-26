@@ -4,7 +4,6 @@ import os
 import collections
 import copy
 import re
-import click
 import csv
 
 import ayon_api
@@ -223,7 +222,7 @@ def generate_delivery_media_playlist_id(
         if not new_success:
             success = False
 
-    click.echo(report_items)
+    logger.debug(report_items)
     return report_items, success
 
 

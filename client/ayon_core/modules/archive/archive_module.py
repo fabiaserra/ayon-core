@@ -1,11 +1,11 @@
 import sys
-import click
 
 from ayon_core.lib import get_ayon_launcher_args
 from ayon_core.lib.execute import run_detached_process
-from ayon_core.modules import (
+from ayon_core.addon import (
     AYONAddon,
-    ITrayAction
+    ITrayAction,
+    click_wrap
 )
 
 
@@ -17,7 +17,7 @@ class ArchiveModule(AYONAddon, ITrayAction):
         self.enabled = True
 
     def cli(self, click_group):
-        click_group.add_command(cli_main)
+        click_group.add_command(cli_main.to_click_obj())
 
     def tray_init(self):
         return
@@ -32,9 +32,9 @@ class ArchiveModule(AYONAddon, ITrayAction):
         self.launch_archive_tool()
 
 
-@click.command("clean_project")
-@click.argument("proj_code")
-@click.option("--archive/--no-archive", default=False)
+@click_wrap.command("clean_project")
+@click_wrap.argument("proj_code")
+@click_wrap.option("--archive/--no-archive", default=False)
 def clean_project_command(
     proj_code,
     archive,
@@ -48,8 +48,8 @@ def clean_project_command(
     return archive_proj.clean(archive=archive)
 
 
-@click.command("purge_project")
-@click.argument("proj_code")
+@click_wrap.command("purge_project")
+@click_wrap.argument("proj_code")
 def purge_project_command(
     proj_code,
 ):
@@ -62,8 +62,8 @@ def purge_project_command(
     return archive_proj.purge()
 
 
-@click.command("generate_archive_media")
-@click.argument("proj_code")
+@click_wrap.command("generate_archive_media")
+@click_wrap.argument("proj_code")
 def generate_archive_media(
     proj_code,
 ):
@@ -75,7 +75,7 @@ def generate_archive_media(
     return archive_proj.generate_archive_media()
 
 
-@click.group(ArchiveModule.name, help="Archive CLI")
+@click_wrap.group(ArchiveModule.name, help="Archive CLI")
 def cli_main():
     pass
 
@@ -92,6 +92,3 @@ cli_main.add_command(clean_project_command)
 cli_main.add_command(purge_project_command)
 cli_main.add_command(generate_archive_media)
 
-
-if __name__ == "__main__":
-    cli_main()

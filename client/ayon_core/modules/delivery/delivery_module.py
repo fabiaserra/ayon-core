@@ -1,8 +1,7 @@
-import click
-
 from ayon_core.modules import (
     AYONAddon,
-    ITrayAddon
+    ITrayAddon,
+    click_wrap
 )
 from ayon_core.modules.delivery.scripts import sg_delivery
 
@@ -16,7 +15,7 @@ class DeliveryModule(AYONAddon, ITrayAddon):
         self.enabled = True
 
     def cli(self, click_group):
-        click_group.add_command(cli_main)
+        click_group.add_command(cli_main.to_click_obj())
 
     def tray_init(self):
         from .tray.delivery_tray import DeliveryTrayWrapper
@@ -32,23 +31,22 @@ class DeliveryModule(AYONAddon, ITrayAddon):
         return self.tray_wrapper.tray_menu(tray_menu)
 
 
-@click.command("deliver_playlist_id")
-@click.option(
+@click_wrap.command("deliver_playlist_id")
+@click_wrap.option(
     "--playlist_id",
     "-p",
     required=True,
     type=int,
     help="Shotgrid playlist id to deliver.",
 )
-@click.option(
+@click_wrap.option(
     "--delivery_types",
     "-types",
-    type=click.Choice(["final", "review"]),
     required=False,
     multiple=True,
     default=["final", "review"],
 )
-@click.option(
+@click_wrap.option(
     "--representation_names",
     "-r",
     multiple=True,
@@ -78,23 +76,22 @@ def deliver_playlist_id_command(
     )
 
 
-@click.command("deliver_version_id")
-@click.option(
+@click_wrap.command("deliver_version_id")
+@click_wrap.option(
     "--version_id",
     "-v",
     required=True,
     type=int,
     help="Shotgrid version id to deliver.",
 )
-@click.option(
+@click_wrap.option(
     "--delivery_types",
     "-types",
-    type=click.Choice(["final", "review"]),
     required=False,
     multiple=True,
     default=["final", "review"],
 )
-@click.option(
+@click_wrap.option(
     "--representation_names",
     "-r",
     multiple=True,
@@ -126,15 +123,15 @@ def deliver_version_id_command(
     )
 
 
-@click.command("republish_playlist_id")
-@click.option(
+@click_wrap.command("republish_playlist_id")
+@click_wrap.option(
     "--playlist_id",
     "-p",
     required=True,
     type=int,
     help="Shotgrid playlist id to republish.",
 )
-@click.option(
+@click_wrap.option(
     "--representation_names",
     "-r",
     multiple=True,
@@ -142,15 +139,14 @@ def deliver_version_id_command(
     help="List of representation names that should exist on the republished version",
     default=None,
 )
-@click.option(
+@click_wrap.option(
     "--delivery_types",
     "-types",
-    type=click.Choice(["final", "review"]),
     required=False,
     multiple=True,
     default=["final", "review"],
 )
-@click.option("--override/--no-override", default=False)
+@click_wrap.option("--override/--no-override", default=False)
 def republish_playlist_id_command(
     playlist_id,
     delivery_types,
@@ -177,23 +173,22 @@ def republish_playlist_id_command(
     )
 
 
-@click.command("republish_version_id")
-@click.option(
+@click_wrap.command("republish_version_id")
+@click_wrap.option(
     "--version_id",
     "-v",
     required=True,
     type=int,
     help="Shotgrid version id to republish.",
 )
-@click.option(
+@click_wrap.option(
     "--delivery_types",
     "-types",
-    type=click.Choice(["final", "review"]),
     required=False,
     multiple=True,
     default=["final", "review"],
 )
-@click.option(
+@click_wrap.option(
     "--representation_names",
     "-r",
     multiple=True,
@@ -201,7 +196,7 @@ def republish_playlist_id_command(
     help="List of representation names that should exist on the republished version",
     default=None,
 )
-@click.option("--force/--no-force", default=False)
+@click_wrap.option("--force/--no-force", default=False)
 def republish_version_id_command(
     version_id,
     delivery_types,
@@ -227,21 +222,21 @@ def republish_version_id_command(
     )
 
 
-@click.command("launch_sg_delivery")
+@click_wrap.command("launch_sg_delivery")
 def launch_sg_delivery():
     """Launch SG Delivery tool UI."""
     from ayon_core.modules.delivery.tray import delivery_dialog
     delivery_dialog.main()
 
 
-@click.command("launch_outsource")
+@click_wrap.command("launch_outsource")
 def launch_outsource():
     """Launch Outsource Delivery tool UI."""
     from ayon_core.modules.delivery.tray import outsource_dialog
     outsource_dialog.main()
 
 
-@click.group(DeliveryModule.name, help="Delivery CLI")
+@click_wrap.group(DeliveryModule.name, help="Delivery CLI")
 def cli_main():
     pass
 

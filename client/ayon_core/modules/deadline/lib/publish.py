@@ -75,8 +75,11 @@ def check_task_exists(project_name, folder_entity, task_name, force_creation=Fal
             sg_entity_type,
             tasks={task_name: task_name}
         )
-    elif task_name not in ayon_api.get_tasks_by_folder_path(folder_entity["path"]):
-        return False
+    else:
+        existing_tasks = ayon_api.get_tasks_by_folder_path(project_name, folder_entity["path"])
+        existing_task_names = [task["name"] for task in existing_tasks]
+        if task_name not in existing_task_names:
+            return False
 
     return True
 

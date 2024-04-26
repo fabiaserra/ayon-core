@@ -1,8 +1,7 @@
-import click
-
 from ayon_core.modules import (
     AYONAddon,
-    ITrayAddon
+    ITrayAddon,
+    click_wrap
 )
 
 
@@ -15,7 +14,7 @@ class IngestModule(AYONAddon, ITrayAddon):
         self.enabled = True
 
     def cli(self, click_group):
-        click_group.add_command(cli_main)
+        click_group.add_command(cli_main.to_click_obj())
 
     def tray_init(self):
         from .tray.ingest_tray import IngestTrayWrapper
@@ -32,8 +31,8 @@ class IngestModule(AYONAddon, ITrayAddon):
         return self.tray_wrapper.tray_menu(tray_menu)
 
 
-@click.command("ingest_folder_path")
-@click.argument("folder_path", type=click.Path(exists=True))
+@click_wrap.command("ingest_folder_path")
+@click_wrap.argument("folder_path", type=str)
 def ingest_folder_path(
     folder_path,
 ):
@@ -48,21 +47,21 @@ def ingest_folder_path(
         folder_path
     )
 
-@click.command("launch_batch_ingester")
+@click_wrap.command("launch_batch_ingester")
 def launch_batch_ingester():
     """Launch batch ingester tool UI."""
     from ayon_core.modules.ingest.tray import batch_ingester
     batch_ingester.main()
 
 
-@click.command("launch_texture_publisher")
+@click_wrap.command("launch_texture_publisher")
 def launch_texture_publisher():
     """Launch Outsource Delivery tool UI."""
     from ayon_core.modules.ingest.tray import texture_publisher
     texture_publisher.main()
 
 
-@click.group(IngestModule.name, help="Ingest CLI")
+@click_wrap.group(IngestModule.name, help="Ingest CLI")
 def cli_main():
     pass
 
@@ -70,7 +69,3 @@ def cli_main():
 cli_main.add_command(ingest_folder_path)
 cli_main.add_command(launch_batch_ingester)
 cli_main.add_command(launch_texture_publisher)
-
-
-if __name__ == "__main__":
-    cli_main()

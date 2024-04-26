@@ -1,7 +1,8 @@
 """Module for handling OP delivery of Shotgrid playlists"""
 import copy
 import collections
-import click
+
+import ayon_api
 
 from ayon_core.lib import Logger, collect_frames, get_datetime_data
 from ayon_core.pipeline import Anatomy
@@ -76,7 +77,7 @@ def deliver_playlist_id(
         if not new_success:
             success = False
 
-    click.echo(report_items)
+    logger.info(report_items)
     return report_items, success
 
 
@@ -179,7 +180,7 @@ def deliver_version(
         debug_msg = "Processing representation {}".format(repre["id"])
         if source_path:
             debug_msg += " with published path {}.".format(source_path)
-        click.echo(debug_msg)
+        logger.debug(debug_msg)
 
         # Get source repre path
         frame = repre["context"].get("frame")
@@ -318,7 +319,6 @@ def deliver_version(
 #         if not new_success:
 #             success = False
 
-#     click.echo(report_items)
 #     return report_items, success
 
 
@@ -581,7 +581,6 @@ def deliver_version(
 #     # neat_vid_reformat_tag = {"id": 6211, "name": "neat_vid_reformat", "type": "Tag"}
 #     # sg.update("Version", sg_version["id"], {"tags": [neat_vid_reformat_tag]})
 
-#     click.echo(report_items)
 #     return report_items, True
 
 
@@ -650,7 +649,6 @@ def deliver_version(
 #         if not new_success:
 #             success = False
 
-#     click.echo(report_items)
 #     return report_items, success
 
 
@@ -971,5 +969,4 @@ def deliver_version(
 #     with open(metadata_path, "w") as f:
 #         json.dump(publish_job, f, indent=4, sort_keys=True)
 
-#     click.echo(report_items)
 #     return report_items, True
