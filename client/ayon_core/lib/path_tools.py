@@ -230,7 +230,7 @@ def get_last_version_from_path(path_dir, filter):
 # Regular expression that allows us to replace the frame numbers of a file path
 # with any string token
 RE_FRAME_NUMBER = re.compile(
-    r"(?P<prefix>\w+[\._])(?P<frame>(\*|%0?\d*d|\d|#)+)\.(?P<extension>\w+\.?(sc|gz)?$)"
+    r"(?P<prefix>.+[\._])(?P<frame>(\*|%0?\d*d|\d|#)+)\.(?P<extension>\w+\.?(sc|gz)?$)"
 )
 
 # Regular expression that allows us to find the number of padding of a frame token
