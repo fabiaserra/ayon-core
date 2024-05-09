@@ -297,6 +297,7 @@ class TexturePublisher(QtWidgets.QDialog):
                 products_data,
                 self._overwrite_version_cb.isChecked(),
                 force_task_creation=True,
+                create_groups=True
             )
 
         except Exception:

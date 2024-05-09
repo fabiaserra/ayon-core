@@ -190,6 +190,7 @@ def publish_version(
     publish_data,
     overwrite_version=False,
     force_task_creation=False,
+    product_group=None,
 ):
     # String representation of product being published
     item_str = f"Folder Path: {folder_path} - Task: {task_name} - Product Type: {product_type} - Product Name: {product_name}"
@@ -261,6 +262,9 @@ def publish_version(
         "convertToScanline": publish_data.get("convertToScanline", False),
         "stagingDir_persistent": True,
     }
+
+    if product_group:
+        instance_data["productGroup"] = product_group
 
     logger.debug("Getting representations...")
 

@@ -134,12 +134,12 @@ FALLBACK_FILENAME_RE = re.compile(
 )
 
 # Words to remove from product_name if they exist
-product_nameS_TO_IGNORE = {
+PRODUCT_NAMES_TO_IGNORE = {
     "abc",
     "fbx",
 }
-product_nameS_TO_IGNORE_RE = re.compile(
-    f"_?({'|'.join(re.escape(word) for word in product_nameS_TO_IGNORE)})_?",
+PRODUCT_NAMES_TO_IGNORE_RE = re.compile(
+    f"_?({'|'.join(re.escape(word) for word in PRODUCT_NAMES_TO_IGNORE)})_?",
     re.IGNORECASE
 )
 
@@ -241,13 +241,22 @@ def validate_products(
 
 
 def publish_products(
-    project_name, products_data, overwrite_version=False, force_task_creation=False
+    project_name,
+    products_data,
+    overwrite_version=False,
+    force_task_creation=False,
+    create_groups=False,
+
 ):
     """Given a list of ProductRepresentation objects, publish them to OP and SG
 
     Args:
         project_name (str): Name of the project to publish to
         products_data (list): List of ProductRepresentation objects
+        overwrite_version (bool): Whether to overwrite the version if it exists
+        force_task_creation (bool): Whether to force the creation of the task
+        create_groups (bool): Whether to create groups for the subsets
+            that match all the name but the last delimiter token
 
     Returns:
         tuple: Tuple containing:
@@ -264,9 +273,13 @@ def publish_products(
             "Select project before publishing!"
         ), False
 
+    products = {}
+
+    # Initialize dictionary that will hold possible product groups
+    product_groups = {}
+
     # Go through list of products data from ingest dialog table and combine the
     # representations dictionary for the products that target the same product_name
-    products = {}
     for product_item in products_data:
         item_str = f"{product_item.folder_path} - {product_item.task} - {product_item.product_type} - {product_item.product_name}"
         logger.debug(item_str)
@@ -298,6 +311,26 @@ def publish_products(
                 continue
 
             products[key]["expected_representations"][product_item.rep_name] = product_item.path
+
+        if create_groups:
+            group_name = product_item.subset.rsplit("_", 1)[0]
+            group_key = (
+                product_item.asset,
+                group_name
+            )
+            if group_key not in product_groups:
+                product_groups[group_key] = set()
+
+            product_groups[group_key].add(key)
+
+    # If product groups dictionary exists, assign it to the products dictionary
+    # if there's more than one item under that group
+    for group_key, product_keys in product_groups.items():
+        if len(product_keys) == 1:
+            continue
+
+        for product_key in product_keys:
+            products[product_key]["productGroup"] = group_key[-1]
 
     logger.debug("Flattened products: %s", products)
 
@@ -334,12 +367,22 @@ def get_products_from_filepath(package_path, project_name, project_code):
                 result += "_"
             result += c.lower()
         return result
+    
+    # Get all folders in project and sort them in priority that we want to
+    # detect the name on the path (i.e., shots before sequences...)
+    folder_entities = ayon_api.get_folders(project_name)
+    folder_names_dict = {}
+    for asset_doc in folder_entities:
+        asset_type = asset_doc["folderType"]
+        if asset_type not in folder_names_dict:
+            folder_names_dict[asset_type] = []
 
-    folder_names = [
-        folder_entity["name"] for folder_entity in ayon_api.get_folders(project_name)
-    ]
-    # Reverse to give less priority to the more generic folders
-    folder_names.reverse()
+        folder_names_dict[asset_type].append(asset_doc["name"])
+
+    folder_names = []
+    for asset_type in ["Shot", "Asset", "Sequence", "Episode", "AssetCategory", "Season"]:
+        if asset_type in folder_names_dict:
+            folder_names.extend(folder_names_dict[asset_type])
 
     folders_re = "|".join(folder_names)
     strict_regex_str = STRICT_FILENAME_RE_STR.format(shot_codes=folders_re)
@@ -595,7 +638,7 @@ def get_product_from_filepath(
 
     # Remove tokens that can be ignored from Product name
     if publish_data["product_name"]:
-        publish_data["product_name"], count = product_nameS_TO_IGNORE_RE.subn(
+        publish_data["product_name"], count = PRODUCT_NAMES_TO_IGNORE_RE.subn(
             "", publish_data["product_name"]
         )
         if count:
