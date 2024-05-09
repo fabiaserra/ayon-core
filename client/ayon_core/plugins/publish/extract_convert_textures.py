@@ -52,12 +52,14 @@ class ExtractConvertTextures(pyblish.api.InstancePlugin):
             if isinstance(repre["files"], (list, tuple)):
                 self.log.warning("We don't support multiple files for the textures family")
 
+            is_sequence = False
             if not isinstance(repre["files"], (list, tuple)):
                 texture_files = [repre["files"]]
                 self.log.debug("We have a single frame")
             else:
                 texture_files = repre["files"]
                 self.log.debug("We have a sequence")
+                is_sequence = True
 
             stagingdir = os.path.normpath(repre.get("stagingDir"))
 
@@ -141,4 +143,4 @@ class ExtractConvertTextures(pyblish.api.InstancePlugin):
 
             # Update representation file to point to the new tx file
             repre["ext"] = "tx"
-            repre["files"] = updated_files
+            repre["files"] = updated_files if is_sequence else updated_files[0]
