@@ -237,7 +237,6 @@ def create_skeleton_instance(
         "task": data["task"],
         "families": families,
         "folderPath": data["folderPath"],
-        "task": data["task"],
         "frameStart": time_data.start,
         "frameEnd": time_data.end,
         "handleStart": time_data.handle_start,
