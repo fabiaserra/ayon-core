@@ -135,6 +135,12 @@ class ExtractConvertTextures(pyblish.api.InstancePlugin):
                 # from the representation
                 updated_files.append(destination_filename)
 
+                # Add tempoporary .tx path to explicit clean up so it gets
+                # deleted after publish
+                instance.context.data["cleanupFullPaths"].append(
+                    destination_path
+                )
+
             try:
                 repre["tags"].remove("toTx")
             except ValueError:
@@ -144,3 +150,4 @@ class ExtractConvertTextures(pyblish.api.InstancePlugin):
             # Update representation file to point to the new tx file
             repre["ext"] = "tx"
             repre["files"] = updated_files if is_sequence else updated_files[0]
+
