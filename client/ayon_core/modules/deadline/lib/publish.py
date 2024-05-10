@@ -249,6 +249,7 @@ def publish_version(
         "project": project_name,
         "productType": product_type,
         "productName": product_name,
+        "family": product_type,
         "families": publish_data.get("families", []),
         "folderPath": folder_path,
         "task": task_name,
