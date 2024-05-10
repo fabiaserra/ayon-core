@@ -346,6 +346,7 @@ def publish_products(
             {"version": product_data.get("version")},
             overwrite_version,
             force_task_creation,
+            product_data.get("productGroup"),
         )
         if success:
             report_items["Successfully submitted products to publish"].append(msg)
