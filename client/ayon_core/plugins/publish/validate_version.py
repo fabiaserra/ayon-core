@@ -1,4 +1,7 @@
 import pyblish.api
+from ayon_core.pipeline import (
+    OptionalPyblishPluginMixin
+)
 from ayon_core.pipeline.publish import PublishValidationError
 
 
