@@ -24,9 +24,9 @@ from ayon_core.modules.ingest.lib import textures
 class ExtractConvertTextures(pyblish.api.InstancePlugin):
     """Convert texture to .tx using OIIO maketx tool."""
 
+    order = pyblish.api.ExtractorOrder
     label = "Extract Texture TX"
     hosts = ["shell"]
-    order = pyblish.api.ExtractorOrder
     families = ["textures"]
 
     def process(self, instance):

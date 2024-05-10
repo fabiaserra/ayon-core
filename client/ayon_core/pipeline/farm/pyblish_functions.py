@@ -234,6 +234,7 @@ def create_skeleton_instance(
     instance_skeleton_data = {
         "productType": data["productType"],
         "productName": data["productName"],
+        "family": data["productType"],
         "task": data["task"],
         "families": families,
         "folderPath": data["folderPath"],
