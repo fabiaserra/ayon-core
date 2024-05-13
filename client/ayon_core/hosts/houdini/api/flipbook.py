@@ -273,6 +273,15 @@ class FlipbookDialog(QtWidgets.QDialog):
         if button_idx:
             return
 
+        comment, version = values
+
+        publish_data = {}
+        if comment:
+            publish_data["comment"] = comment
+
+        if version:
+            publish_data["version"] = int(version)
+
         message, success = publish.publish_version(
             os.getenv("AYON_PROJECT_NAME"),
             os.getenv("AYON_FOLDER_PATH"),
@@ -280,7 +289,7 @@ class FlipbookDialog(QtWidgets.QDialog):
             "review",
             product_name,
             {"jpg": output_path},
-            publish_data={"comment": values[0], "version": values[1]},
+            publish_data=publish_data,
             overwrite_version=True if values[1] else False,
         )
         if success:
