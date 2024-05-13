@@ -343,7 +343,9 @@ def publish_version(
                 "src_colorspace": publish_data.get("src_colorspace", "scene_linear"),
                 # We default the output colorspace to out_colorspace if it's not
                 # explicitly set on the publish_data dictionary
-                "out_colorspace": publish_data.get("out_colorspace", out_colorspace)
+                "out_colorspace": publish_data.get("out_colorspace", out_colorspace),
+                "product_name": product_name,
+                "contact_sheet": True if product_name.endswith("_util") else False,
             }
 
             # Create read path to pass to Nuke task

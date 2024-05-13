@@ -7,8 +7,8 @@ from ayon_core.modules.deadline.lib import submit
 
 # TODO: Replace these with published Templates workflow
 NUKE_REVIEW_PY = "/pipe/nuke/templates/review_template.py"
-DEFAULT_NUKE_REVIEW_SCRIPT = "/pipe/nuke/templates/review_template.nk"
-PROJ_NUKE_REVIEW_SCRIPT = "/proj/{proj_code}/resources/review/review_template.nk"
+DEFAULT_NUKE_REVIEW_SCRIPT = "/pipe/nuke/templates/{review_type}_template.nk"
+PROJ_NUKE_REVIEW_SCRIPT = "/proj/{proj_code}/resources/review/{review_type}_template.nk"
 
 REVIEW_REPRESENTATION_NAME = "h264"
 
@@ -39,12 +39,19 @@ def generate_review(
 ):
     output_dir, output_filename = os.path.split(output_path)
 
+    # If we are requesting to generate a contact sheet instead, use the
+    # other Nuke script template
+    review_type = "review"
+    create_contact_sheet = review_data.get("contact_sheet")
+    if create_contact_sheet:
+        review_type = "contact_sheet"
+
     # Get the Nuke script to use to generate the review
     # First try to see if there's one set on the show, otherwise
     # we just use the default global one
-    nuke_review_script = DEFAULT_NUKE_REVIEW_SCRIPT
+    nuke_review_script = DEFAULT_NUKE_REVIEW_SCRIPT.format(review_type=review_type)
     proj_review_script = PROJ_NUKE_REVIEW_SCRIPT.format(
-        proj_code=proj_code
+        proj_code=proj_code, review_type=review_type
     )
     if os.path.exists(proj_review_script):
         nuke_review_script = proj_review_script
@@ -89,8 +96,9 @@ def generate_review(
     }
 
     logger.info("Submitting Nuke review generation")
-    task_name = "Create SG Review - {} - {} - {} ({})".format(
-        output_filename,
+    task_name = "Create SG Review {}- {} - {} - {} ({})".format(
+        "(Contact Sheet) " if create_contact_sheet else "",
+        review_data.get("product_name") or output_filename,
         folder_path,
         project_name,
         proj_code
