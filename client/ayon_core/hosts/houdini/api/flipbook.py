@@ -275,7 +275,8 @@ class FlipbookDialog(QtWidgets.QDialog):
 
         comment, version = values
 
-        publish_data = {}
+        publish_data = {"out_colorspace": "rec709"}
+        
         if comment:
             publish_data["comment"] = comment
 
