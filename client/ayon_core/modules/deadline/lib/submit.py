@@ -73,12 +73,6 @@ def payload_submit(
     for index, job in enumerate(job_dependencies):
         payload["JobInfo"][f"JobDependency{index}"] = job["_id"]
 
-    # Temporary hack to allow publish job to continue even if review task fails
-    # because of this bug we have with monitored process in Nuke tasks
-    # where the task shows as failed even though it completed
-    if job_dependencies:
-        payload["JobInfo"]["ResumeOnFailedDependencies"] = True
-
     # Include critical environment variables with submission
     keys = [
         "AYON_FOLDER_PATH",
