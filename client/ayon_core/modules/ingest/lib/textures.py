@@ -26,6 +26,7 @@ LINEAR_EXTS = [
 RAW_FUZZY_NAMES = {
     "disp",
     "displacement",
+    "normal"
 }
 
 logger = Logger.get_logger(__name__)
@@ -59,5 +60,7 @@ def guess_colorspace(filepath):
         return in_colorspace
     elif img_info["format"] in BIT_DEPTHS_SRGB:
         return "sRGB"
-    else:
-        return "linear"
+    elif any([name in single_file.lower() for name in RAW_FUZZY_NAMES]):
+        return "Raw"
+
+    return "linear"

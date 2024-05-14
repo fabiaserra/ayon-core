@@ -24,9 +24,9 @@ from ayon_core.modules.ingest.lib import textures
 class ExtractConvertTextures(pyblish.api.InstancePlugin):
     """Convert texture to .tx using OIIO maketx tool."""
 
+    order = pyblish.api.ExtractorOrder
     label = "Extract Texture TX"
     hosts = ["shell"]
-    order = pyblish.api.ExtractorOrder
     families = ["textures"]
 
     def process(self, instance):
@@ -63,12 +63,13 @@ class ExtractConvertTextures(pyblish.api.InstancePlugin):
 
             stagingdir = os.path.normpath(repre.get("stagingDir"))
 
-            try:
-                maketx_args = get_oiio_tool_args("maketx")
-            except ToolNotFoundError:
-                self.log.error("OIIO tool not found.")
-                raise KnownPublishError("OIIO tool not found")
-            
+            # try:
+            #     maketx_args = get_oiio_tool_args("maketx")
+            # except ToolNotFoundError:
+            #     self.log.error("OIIO tool not found.")
+            #     raise KnownPublishError("OIIO tool not found")
+            maketx_args = ["/sw/arnold/mtoa/2024_5.3.2.1/bin/maketx"]
+
             self.log.debug("Found 'maketx' binary at %s", maketx_args)
 
             updated_files = []

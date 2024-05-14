@@ -255,7 +255,7 @@ def publish_products(
         products_data (list): List of ProductRepresentation objects
         overwrite_version (bool): Whether to overwrite the version if it exists
         force_task_creation (bool): Whether to force the creation of the task
-        create_groups (bool): Whether to create groups for the subsets
+        create_groups (bool): Whether to create groups for the products
             that match all the name but the last delimiter token
 
     Returns:
@@ -313,9 +313,9 @@ def publish_products(
             products[key]["expected_representations"][product_item.rep_name] = product_item.path
 
         if create_groups:
-            group_name = product_item.subset.rsplit("_", 1)[0]
+            group_name = product_item.product_name.rsplit("_", 1)[0]
             group_key = (
-                product_item.asset,
+                product_item.folder_path,
                 group_name
             )
             if group_key not in product_groups:
@@ -346,6 +346,7 @@ def publish_products(
             {"version": product_data.get("version")},
             overwrite_version,
             force_task_creation,
+            product_data.get("productGroup"),
         )
         if success:
             report_items["Successfully submitted products to publish"].append(msg)
@@ -372,17 +373,17 @@ def get_products_from_filepath(package_path, project_name, project_code):
     # detect the name on the path (i.e., shots before sequences...)
     folder_entities = ayon_api.get_folders(project_name)
     folder_names_dict = {}
-    for asset_doc in folder_entities:
-        asset_type = asset_doc["folderType"]
-        if asset_type not in folder_names_dict:
-            folder_names_dict[asset_type] = []
+    for folder_ent in folder_entities:
+        folder_type = folder_ent["folderType"]
+        if folder_type not in folder_names_dict:
+            folder_names_dict[folder_type] = []
 
-        folder_names_dict[asset_type].append(asset_doc["name"])
+        folder_names_dict[folder_type].append(folder_ent["name"])
 
     folder_names = []
-    for asset_type in ["Shot", "Asset", "Sequence", "Episode", "AssetCategory", "Season"]:
-        if asset_type in folder_names_dict:
-            folder_names.extend(folder_names_dict[asset_type])
+    for folder_type in ["Shot", "Asset", "Sequence", "Episode", "AssetCategory", "Season"]:
+        if folder_type in folder_names_dict:
+            folder_names.extend(folder_names_dict[folder_type])
 
     folders_re = "|".join(folder_names)
     strict_regex_str = STRICT_FILENAME_RE_STR.format(shot_codes=folders_re)
