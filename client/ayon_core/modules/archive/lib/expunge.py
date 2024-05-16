@@ -517,26 +517,42 @@ class ArchiveProject:
         # Level of caution for published files
         caution_level_default = 1
 
-        # TODO: enable after a while since `stagingDir` integrate on the
-        # representations was just added recently
-        # repre_docs = ayon_api.get_representations(
-        #     project_name
+        # repre_docs = op_cli.get_representations(
+        #     self.project_name
         # )
         # # Iterate over all representations in the project and check if
         # # stagingDir is stored in its data and consider it for deletion
         # # if it's old enough
         # for repre_doc in repre_docs:
         #     staging_dir = repre_doc["data"].get("stagingDir")
-        #     if staging_dir:
-        #         staging_dir = anatomy.fill_root(staging_dir)
-        #         # TODO: make sure to check if the staging dir is older than the publish!
-        #         deleted, _, size = self.consider_file_for_deletion(
-        #             staging_dir, caution_level=caution_level, archive
+        #     if not staging_dir:
+        #         continue
+
+        #     # Reset caution level every time
+        #     caution_level_ = caution_level_default
+
+        #     staging_dir = self.anatomy.fill_root(staging_dir)
+        #     deleted, marked = self.consider_file_for_deletion(
+        #         staging_dir, caution_level=caution_level_, archive=archive
+        #     )
+        #     if marked or deleted:
+        #         logger.info(
+        #             "Published file '%s' from '%s", repre_doc["path"], staging_dir
         #         )
-        #         if deleted:
-        #             logger.info(" - Published file in '%s'", )
-        #             if calculate_size:
-        #                 total_size += size
+
+        #     if deleted and not const._debug:
+        #         # Add metadata to version so we can skip from inspecting it
+        #         # in the future
+        #         logger.debug("Updating OP entity with data.source_deleted=True")
+        #         session = OperationsSession()
+        #         session.update_entity(
+        #             self.project_name,
+        #             "version",
+        #             version_doc["_id"],
+        #             {"data.source_deleted": True}
+        #         )
+        #         session.commit()
+
 
         version_entities = ayon_api.get_versions(self.project_name)
         for version_entity in version_entities:
