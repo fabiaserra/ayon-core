@@ -69,7 +69,10 @@ class ExtractScanlineExr(pyblish.api.InstancePlugin):
 
                 subprocess_exr = " ".join(oiio_cmd)
                 self.log.debug(f"running: {subprocess_exr}")
-                run_subprocess(subprocess_exr, logger=self.log)
+                ### Starts Alkemy-X Override ###
+                # Added shell=True as otherwise it errors out in the farm
+                run_subprocess(subprocess_exr, shell=True, logger=self.log)
+                ### Ends Alkemy-X Override ###
 
                 # raise error if there is no ouptput
                 if not os.path.exists(os.path.join(stagingdir, original_name)):
