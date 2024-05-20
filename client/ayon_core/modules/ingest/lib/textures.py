@@ -38,16 +38,14 @@ def guess_colorspace(filepath):
     Returns:
         str: a string suitable for the --colorconvert option of maketx (linear, sRGB, Rec709)
     """
-    _, ext = os.path.splitext(filepath)
-    if ext in LINEAR_EXTS:
-        return "linear"
-
-    # In case the filepath given is a sequence
-    source_files, _, _, _ = path_tools.convert_to_sequence(
+    source_files, ext, _ = path_tools.convert_to_sequence(
         filepath
     )
     if not source_files:
         return
+    
+    if ext in LINEAR_EXTS:
+        return "linear"
     
     single_file = source_files[0]
     try:

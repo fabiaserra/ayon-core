@@ -279,6 +279,22 @@ def replace_frame_number_with_token(path, token, padding=False):
     return os.path.join(root, filename)
 
 
+def get_frame_start_end_from_range(frame_range):
+    """Utils function to get frame start/end from frame range string"""
+    if "-" in frame_range:
+        # Format "1001-1010"
+        frame_start, frame_end = map(int, frame_range.split("-"))
+    elif "," in frame_range:
+        # Format "1001,1005,1010"
+        frames = list(map(int, frame_range.split(",")))
+        frame_start, frame_end = min(frames), max(frames)
+    else:
+        # Single frame case "1001"
+        frame_start = frame_end = int(frame_range)
+    
+    return frame_start, frame_end
+
+
 def convert_to_sequence(file_path):
     """Convert file path to a sequence and return the sequence and frame range.
     """
@@ -290,8 +306,7 @@ def convert_to_sequence(file_path):
     collections, remainder = clique.assemble(representation_files)
 
     ext = None
-    frame_start = None
-    frame_end = None
+    frame_range = None
 
     # If file path is in remainder it means it was a single file
     if file_path in remainder:
@@ -301,11 +316,9 @@ def convert_to_sequence(file_path):
         if frame_match:
             ext = frame_match.group("extension")
             frame = frame_match.group("frame")
-            frame_start = frame
-            frame_end = frame
+            frame_range = f"{frame}-{frame}"
         else:
-            frame_start = 1
-            frame_end = 1
+            frame_range = "1-1"
             ext = os.path.splitext(file_path)[1][1:]
 
     elif not collections:
@@ -313,7 +326,7 @@ def convert_to_sequence(file_path):
             "Couldn't find a collection for file pattern '%s'.",
             file_pattern
         )
-        return None, None, None, None
+        return None, None, None
 
     if len(collections) > 1:
         log.warning(
@@ -326,11 +339,13 @@ def convert_to_sequence(file_path):
 
     if not ext:
         ext = collection.tail.lstrip(".")
+    
+    if not frame_range:
+        if collection.is_contiguous():
+            frame_range = f"{min(collection.indexes)}-{max(collection.indexes)}"
+        else:
+            frame_range = ",".join(str(idx) for idx in collection.indexes)
 
-    if not frame_start or not frame_end:
-        frame_start = min(collection.indexes)
-        frame_end = max(collection.indexes)
-
-    return list(collection), ext, frame_start, frame_end
+    return list(collection), ext, frame_range
 
 #### Ends Alkemy-X Override ####

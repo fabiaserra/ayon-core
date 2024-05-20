@@ -363,7 +363,7 @@ def publish_version(
             extra_env=extra_env,
             job_dependencies=job_submissions
         )
-        deadline_job_id = response.get("id")
+        deadline_job_id = response.get("_id")
         publish_job["deadline_publish_job_id"] = deadline_job_id
         msg = f"{item_str} -> Deadline Job {deadline_job_id}"
 
@@ -421,6 +421,7 @@ def generate_review_from_instance(
         "out_colorspace": publish_data.get("out_colorspace", out_colorspace),
         "product_name": product_name,
         "contact_sheet": True if product_name.endswith("_util") else False,
+        "frame_range": review_repre["frameRange"],
     }
 
     # Create read path to pass to Nuke task
