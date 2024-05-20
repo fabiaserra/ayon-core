@@ -121,7 +121,7 @@ def get_output_parameter(node):
     category = node.type().category().name()
 
     # Figure out which type of node is being rendered
-    if node_type == "Geometry" or node_type == "Filmbox FBX" or \
+    if node_type in {"Geometry", "Filmbox FBX", "File Cache", "Labs File Cache"} or \
             (node_type == "ROP Output Driver" and category == "Sop"):
         return node.parm("sopoutput")
     elif node_type == "USD" or node_type == "HuskStandalone":
@@ -174,9 +174,15 @@ def get_output_parameter(node):
     elif node_type == "Fetch":
         inner_node = node.node(node.parm("source").eval())
         if inner_node:
-            return get_output_parameter(inner_node)
+            try:
+                return get_output_parameter(inner_node)
+            except TypeError:
+                raise TypeError("Fetch source '%s' not supported" % inner_node)
+
     elif node.type().nameWithCategory() == "Driver/vray_renderer":
         return node.parm("SettingsOutput_img_file_path")
+    elif node_type == "File Cache":
+        return node.parm("sopoutput")
 
     raise TypeError("Node type '%s' not supported" % node_type)
 
