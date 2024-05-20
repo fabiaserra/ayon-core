@@ -79,6 +79,7 @@ def payload_submit(
         "AYON_TASK_NAME",
         "AYON_PROJECT_NAME",
         "AYON_APP_NAME",
+        "AYON_BUNDLE_NAME",
         "OCIO",
         "USER",
         "AYON_SG_USERNAME",
@@ -101,7 +102,7 @@ def payload_submit(
     )
 
     plugin = payload["JobInfo"]["Plugin"]
-    logger.debug("using render plugin : {}".format(plugin))
+    logger.debug("Using render plugin : {}".format(plugin))
 
     logger.debug("Submitting..")
     logger.debug(json.dumps(payload, indent=4, sort_keys=True))

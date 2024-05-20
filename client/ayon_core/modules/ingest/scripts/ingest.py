@@ -221,7 +221,7 @@ def validate_products(
 
     for product_fields, product_data in products.items():
         folder_path, task, product_name = product_fields
-        msg, success = publish.validate_version(
+        msg, success, _ = publish.validate_version(
             project_name,
             folder_path,
             task,
