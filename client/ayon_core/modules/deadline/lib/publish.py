@@ -420,7 +420,7 @@ def generate_review_from_instance(
         # explicitly set on the publish_data dictionary
         "out_colorspace": publish_data.get("out_colorspace", out_colorspace),
         "product_name": product_name,
-        "contact_sheet": True if product_name.endswith("_util") else False,
+        "contact_sheet": True if "_util_" in product_name else False,
         "frame_range": review_repre["frameRange"],
     }
 
