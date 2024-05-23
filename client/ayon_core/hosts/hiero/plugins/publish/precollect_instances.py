@@ -112,12 +112,10 @@ class PrecollectInstances(pyblish.api.ContextPlugin):
             # publish in the farm
             submit_to_farm = product_type == "plate"
             if submit_to_farm:
-                # Insert a copy of 'family' before inserting .farm as well
-                # as in AYON that doesn't seem to be the case by
-                # default somehow
-                families.insert(0, str(product_type))
-                product_type = "{}.farm".format(product_type)
-
+                # Insert plate.farm family so we run the plugins
+                # meant to run for plate ingest in the farm
+                families.insert(0, "plate.farm")
+            
             families.insert(0, str(product_type))
             ### Ends Alkemy-X Override ###
 
