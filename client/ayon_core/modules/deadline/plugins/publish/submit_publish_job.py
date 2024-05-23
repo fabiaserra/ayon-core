@@ -381,7 +381,7 @@ class ProcessSubmittedJobOnFarm(pyblish.api.InstancePlugin,
         self.log.debug("Submitting Deadline publish job ...")
 
         url = "{}/api/jobs".format(self.deadline_url)
-        auth = instance.data["deadline"]["auth"]
+        auth = None  #instance.data["deadline"]["auth"]
         response = requests_post(url, json=payload, timeout=10,
                                  auth=auth)
         if not response.ok:
@@ -536,16 +536,17 @@ class ProcessSubmittedJobOnFarm(pyblish.api.InstancePlugin,
             render_job["Props"]["User"] = instance.context.data.get(
                 "deadlineUser", getpass.getuser())
 
-            render_job["Props"]["Env"] = {
-                "FTRACK_API_USER": os.environ.get("FTRACK_API_USER"),
-                "FTRACK_API_KEY": os.environ.get("FTRACK_API_KEY"),
-                "FTRACK_SERVER": os.environ.get("FTRACK_SERVER"),
-            }
+            render_job["Props"]["Env"] = {}
             render_jobs = [render_job]
-        ### Ends Alkemy-X Override ###
 
         # get default deadline webservice url from deadline module
-        self.deadline_url = instance.data["deadline"]["url"]
+        self.deadline_url = instance.context.data["deadline"]["defaultUrl"]
+        # self.deadline_url = instance.data["deadline"]["url"]
+        ### Ends Alkemy-X Override ###
+
+        # if custom one is set in instance, use that
+        if instance.data.get("deadlineUrl"):
+            self.deadline_url = instance.data.get("deadlineUrl")
         assert self.deadline_url, "Requires Deadline Webservice URL"
 
         ### Starts Alkemy-X Override ###
@@ -556,7 +557,7 @@ class ProcessSubmittedJobOnFarm(pyblish.api.InstancePlugin,
 
         # Inject deadline url to instances to query DL for job id for overrides
         for inst in instances:
-            inst["deadline"] = instance.data["deadline"]
+            inst["deadline"] = self.deadline_url
 
         # publish job file
         publish_job = {
