@@ -202,7 +202,7 @@ class TranscodeFrames(publish.Extractor):
                 extra_env["_AX_TRANSCODE_TARGETCOLORSPACE"] = self.dst_media_color_transform
 
                 extra_env["AYON_RENDER_JOB"] = 1
-                extra_env["AYON_FOLDER_PATH"] = instance.data["folder_path"]
+                extra_env["AYON_FOLDER_PATH"] = instance.data["folderPath"]
                 extra_env["AYON_APP_NAME"] = app_name
 
                 # Create dictionary of data specific to Nuke plugin for payload submit
@@ -220,7 +220,7 @@ class TranscodeFrames(publish.Extractor):
                     plugin_data=plugin_data,
                     batch_name=batch_name,
                     task_name=task_name,
-                    frame_range=(out_frame_start, out_frame_end),
+                    frame_range="{0}-{1}".format(out_frame_start, out_frame_end),
                     department="Editorial",
                     group=dl_constants.NUKE_CPU_GROUP.format(
                         hiero.core.env["VersionMajor"], hiero.core.env["VersionMinor"]
@@ -293,7 +293,7 @@ class TranscodeFrames(publish.Extractor):
                     batch_name=batch_name,
                     task_name=task_name,
                     department="Editorial",
-                    frame_range=(src_frame_start, src_frame_end),
+                    frame_range="{0}-{1}".format(src_frame_start, src_frame_end),
                     group=dl_constants.OP_GROUP,
                     comment=context.data.get("comment", ""),
                 )

@@ -1,3 +1,4 @@
+import os
 import pyblish
 
 from ayon_core.pipeline import AYON_INSTANCE_ID, AVALON_INSTANCE_ID
@@ -92,17 +93,27 @@ class PrecollectInstances(pyblish.api.ContextPlugin):
 
             folder_path, folder_name = self._get_folder_data(tag_data)
 
-            # insert family into families
+            # insert productType into families
+            # TODO: remove backward compatibility
+            product_type = tag_data.get("productType")
+            if product_type is None:
+                # backward compatibility: family -> productType
+                product_type = tag_data.get("family")
+
             ### Starts Alkemy-X Override ###
             # Hard-code the addition of `.farm` suffix to the families so plugins get
             # filtered by it and we can control when the submit publish job plugin
             # gets executed. We can do this because in Hiero we have decided to always
             # publish in the farm
-            submit_to_farm = tag_data["family"] == "plate"
+            submit_to_farm = product_type == "plate"
             if submit_to_farm:
-                family = "{}.farm".format(tag_data["family"])
-            else:
-                family = tag_data["family"]
+                product_type = "{}.farm".format(product_type)
+
+            # backward compatibility: product_type should not be missing
+            if not product_type:
+                self.log.error(
+                    "Product type is not defined for: {}".format(folder_path))
+                
             ### Ends Alkemy-X Override ###
             families = [str(f) for f in tag_data["families"]]
 
@@ -117,17 +128,6 @@ class PrecollectInstances(pyblish.api.ContextPlugin):
                 self.log.error(
                     "Product name is not defined for: {}".format(folder_path))
 
-            # TODO: remove backward compatibility
-            product_type = tag_data.get("productType")
-            if product_type is None:
-                # backward compatibility: family -> productType
-                product_type = tag_data.get("family")
-
-            # backward compatibility: product_type should not be missing
-            if not product_type:
-                self.log.error(
-                    "Product type is not defined for: {}".format(folder_path))
-
             # form label
             label = "{} -".format(folder_path)
             if folder_name != clip_name:
@@ -137,6 +137,7 @@ class PrecollectInstances(pyblish.api.ContextPlugin):
             data.update({
                 "name": "{}_{}".format(folder_path, product_name),
                 "label": label,
+                "task": os.getenv("AYON_TASK_NAME"),
                 "productName": product_name,
                 "productType": product_type,
                 "folderPath": folder_path,
@@ -301,7 +302,7 @@ class PrecollectInstances(pyblish.api.ContextPlugin):
         label += " {}".format(product_name)
 
         data.update({
-            "name": "{}_{}".format(folder_path, subset),
+            "name": "{}_{}".format(folder_path, product_name),
             "label": label,
             "productName": product_name,
             "productType": product_type,

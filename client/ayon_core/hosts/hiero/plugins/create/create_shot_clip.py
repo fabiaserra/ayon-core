@@ -1,5 +1,5 @@
 from copy import deepcopy
-import ayon_core.hosts.hiero.api as phiero
+from ayon_core.hosts.hiero import api as phiero
 # from ayon_core.hosts.hiero.api import plugin, lib
 # reload(lib)
 # reload(plugin)

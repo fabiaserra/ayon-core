@@ -518,7 +518,7 @@ def generate_delivery_media_version(
             task_name=task_name,
             group=dl_constants.NUKE_CPU_GROUP.format("15", "0"),
             priority=100,
-            frame_range=(out_frame_start, out_frame_end),
+            frame_range="{0}-{1}".format(out_frame_start, out_frame_end),
             extra_env=output_task_env,
         )
         report_items["Submitted delivery media job to Deadline"].append(

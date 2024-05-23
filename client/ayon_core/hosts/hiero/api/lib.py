@@ -697,7 +697,7 @@ def launch_workfiles_app(event):
 
 ### Starts Alkemy-x Override ###
 def set_favorites():
-    from openpype.hosts.nuke.api.utils import set_context_favorites
+    from ayon_core.hosts.nuke.api.utils import set_context_favorites
 
     work_dir = os.getenv("AYON_WORKDIR")
     asset = get_current_folder_path()
@@ -1921,26 +1921,26 @@ def get_entity_hierarchy(folder_entity, project_name):
     project_entity = ayon_api.get_project(project_name)
     hierarchy_env = get_hierarchy_env(project_entity, folder_entity)
 
-    asset_entities = {}
+    folder_entities = {}
     episode = hierarchy_env.get("EPISODE")
     if episode:
-        asset_entities["episode"] = episode
+        folder_entities["episode"] = episode
 
     sequence = hierarchy_env.get("SEQ")
     if sequence:
-        asset_entities["sequence"] = sequence
+        folder_entities["sequence"] = sequence
 
     asset = hierarchy_env.get("SHOT")
     if asset:
-        asset_entities["shot"] = asset
+        folder_entities["shot"] = asset
 
     if hierarchy_env.get("ASSET_TYPE"):
         folder = "asset"
     else:
         folder = "shots"
-    asset_entities["folder"] = folder
+    folder_entities["folder"] = folder
 
-    return asset_entities
+    return folder_entities
 
 
 def get_hierarchy_data(folder_entity, project_name, track_name):
@@ -1962,7 +1962,7 @@ def get_hierarchy_parents(hierarchy_data):
     parents_types = ["folder", "episode", "sequence"]
     for key, value in hierarchy_data.items():
         if key in parents_types:
-            entity = {"entity_type": key, "entity_name": value}
+            entity = {"folder_type": key, "entity_name": value}
             parents.append(entity)
 
     return parents
@@ -2036,8 +2036,8 @@ def create_ayon_instance(track_item):
     hierarchy_data = get_hierarchy_data(
         folder_entity, project_name, track_name
     )
-    hierarchy_path = get_hierarchy_path(folder_entity)
     hierarchy_parents = get_hierarchy_parents(hierarchy_data)
+    hierarchy_path = folder_entity["path"]
 
     # Framing comes from tag
     cut_info = set_framing_info(cut_info_data, track_item)
@@ -2053,7 +2053,9 @@ def create_ayon_instance(track_item):
     instance_data["hierarchyData"] = hierarchy_data
     instance_data["hierarchy"] = hierarchy_path
     instance_data["parents"] = hierarchy_parents
+    instance_data["folderPath"] = hierarchy_path
     instance_data["folder"] = track_item_name
+    instance_data["asset_name"] = track_item_name
     instance_data["productName"] = track_name
     instance_data["productType"] = family
     instance_data["family"] = family

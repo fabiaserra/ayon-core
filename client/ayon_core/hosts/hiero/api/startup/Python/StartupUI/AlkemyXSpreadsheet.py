@@ -744,6 +744,9 @@ class CustomSpreadsheetColumns(QObject):
             folder_entity = ayon_api.get_folder_by_name(
                 project_name, folder_name
             )
+            if not folder_entity:
+                return "--"
+
             # Subset is track name
             product_name = item.parentTrack().name()
             last_version_doc = ayon_api.get_last_version_by_product_name(
@@ -993,7 +996,11 @@ class CustomSpreadsheetColumns(QObject):
 
         elif current_column["name"] == "valid_entity":
             project_name = get_current_project_name()
-            folder_entity = ayon_api.get_folder_by_name(project_name, item.name())
+            try:
+                folder_entity = ayon_api.get_folder_by_name(project_name, item.name())
+            except ayon_api.exceptions.GraphQlQueryFailed:
+                icon_name = "icons:status/TagOmitted.png"
+                
             if folder_entity:
                 icon_name = "icons:status/TagFinal.png"
             else:

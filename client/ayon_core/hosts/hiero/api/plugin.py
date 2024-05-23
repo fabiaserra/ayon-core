@@ -602,7 +602,7 @@ class Creator(LegacyCreator):
 
     def __init__(self, *args, **kwargs):
         super(Creator, self).__init__(*args, **kwargs)
-        import ayon_core.hosts.hiero.api as phiero
+        from ayon_core.hosts.hiero import api as phiero
         self.presets = get_current_project_settings()[
             "hiero"]["create"].get(self.__class__.__name__, {})
 
@@ -760,39 +760,26 @@ class PublishClip:
         return self.track_item
 
     ### Starts Alkemy-X Override ###
-    def get_asset_parents(self):
-        """Return parents from asset stored on the Avalon database."""
-
+    def update_path_token_hierarchy(self):
+        """Update UI inputs from clip name to avoid typing values for episode/sequence.
+        Need to recreate the entity relationship that would be seen in Shotgrid
+        There is an assumption that the hierarchy is build for a shot/asset
+        """
         project_name = get_current_project_name()
-        folder_name = self.ti_name
-        folder_entity = ayon_api.get_folder_by_name(project_name, folder_name)
-        if folder_entity:
-            parents = folder_entity["data"]["parents"]
-        else:
+        entity_hierarchy = lib.get_entity_hierarchy(self.ti_name, project_name)
+        if not entity_hierarchy:
             QtWidgets.QMessageBox.warning(
                 hiero.ui.mainWindow(),
                 "Info",
                 "Asset/Shot does not exist in Database. Make sure asset/shot is in Shotgrid. If made recently it can take time for initial Sync",
             )
             raise Exception("Asset/Shot does not exist in Database")
-
-        return parents
-
-    def update_path_token_hierarchy(self):
-        """Update UI inputs from clip name to avoid typing values for episode/sequence.
-        Need to recreate the entity relationship that would be seen in Shotgrid
-        There is an assumption that the hierarchy is build for a shot/asset
-        """
-        episode = ""
-        sequence = ""
-        parents = self.get_asset_parents()
-        shot = self.ti_name
-        if parents:
-            sequence = parents[-1]
-        if len(parents) > 1:
-            episode = parents[0]
-
-        self.shot_path_tokens = {"episode": episode, "sequence": sequence, "shot": shot}
+    
+        self.shot_path_tokens = {
+            "episode": entity_hierarchy.get("episode") or "",
+            "sequence": entity_hierarchy.get("sequence") or "",
+            "shot": entity_hierarchy.get("shot") or self.ti_name,
+        }
         for key in self.shot_path_tokens:
             self.ui_inputs["hierarchyData"]["value"][key]["value"] = self.shot_path_tokens[key]
 

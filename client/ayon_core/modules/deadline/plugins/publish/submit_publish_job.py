@@ -9,10 +9,10 @@ import clique
 import ayon_api
 import pyblish.api
 
-from openpype_modules.deadline.abstract_submit_deadline import requests_post
 from ayon_core.pipeline import publish
 from ayon_core.lib import EnumDef, is_in_tests
 from ayon_core.pipeline.version_start import get_versioning_start
+from ayon_core.modules.deadline.abstract_submit_deadline import requests_post
 
 from ayon_core.pipeline.farm.pyblish_functions import (
     create_skeleton_instance,
