@@ -93,13 +93,18 @@ class PrecollectInstances(pyblish.api.ContextPlugin):
 
             folder_path, folder_name = self._get_folder_data(tag_data)
 
-            # insert productType into families
-            # TODO: remove backward compatibility
+            families = [str(f) for f in tag_data["families"]]
+
             product_type = tag_data.get("productType")
             if product_type is None:
                 # backward compatibility: family -> productType
                 product_type = tag_data.get("family")
 
+            # backward compatibility: product_type should not be missing
+            if not product_type:
+                self.log.error(
+                    "Product type is not defined for: {}".format(folder_path))
+                
             ### Starts Alkemy-X Override ###
             # Hard-code the addition of `.farm` suffix to the families so plugins get
             # filtered by it and we can control when the submit publish job plugin
@@ -107,15 +112,14 @@ class PrecollectInstances(pyblish.api.ContextPlugin):
             # publish in the farm
             submit_to_farm = product_type == "plate"
             if submit_to_farm:
+                # Insert a copy of 'family' before inserting .farm as well
+                # as in AYON that doesn't seem to be the case by
+                # default somehow
+                families.insert(0, str(product_type))
                 product_type = "{}.farm".format(product_type)
 
-            # backward compatibility: product_type should not be missing
-            if not product_type:
-                self.log.error(
-                    "Product type is not defined for: {}".format(folder_path))
-                
+            families.insert(0, str(product_type))
             ### Ends Alkemy-X Override ###
-            families = [str(f) for f in tag_data["families"]]
 
             # TODO: remove backward compatibility
             product_name = tag_data.get("productName")
@@ -133,6 +137,7 @@ class PrecollectInstances(pyblish.api.ContextPlugin):
             if folder_name != clip_name:
                 label += " ({})".format(clip_name)
             label += " {}".format(product_name)
+            label += " {}".format("[" + ", ".join(families) + "]")
 
             data.update({
                 "name": "{}_{}".format(folder_path, product_name),
@@ -140,6 +145,7 @@ class PrecollectInstances(pyblish.api.ContextPlugin):
                 "task": os.getenv("AYON_TASK_NAME"),
                 "productName": product_name,
                 "productType": product_type,
+                "family": product_type,
                 "folderPath": folder_path,
                 "asset_name": folder_name,
                 "item": track_item,
@@ -153,7 +159,8 @@ class PrecollectInstances(pyblish.api.ContextPlugin):
 
                 # add all additional tags
                 "tags": phiero.get_track_item_tags(track_item),
-                "newAssetPublishing": True
+                "newAssetPublishing": True,
+                "farm": submit_to_farm,
             })
 
             # otio clip data
