@@ -407,8 +407,6 @@ def prepare_context_environments(data, env_group=None, addons_manager=None):
             result will be stored.
 
     """
-    from ayon_core.pipeline.context_tools import get_hierarchy_env
-
     # Context environments
     log = data["log"]
 
@@ -440,6 +438,8 @@ def prepare_context_environments(data, env_group=None, addons_manager=None):
             context_env["AYON_TASK_NAME"] = task_entity["name"]
 
     ### Starts Alkemy-X Override ###
+    from ayon_core.pipeline.context_tools import get_hierarchy_env
+
     # Get hierarchy environment variables (i.e., SEASON, SHOW, SEQ...)
     context_env.update(get_hierarchy_env(project_entity, folder_entity))
     ### Ends Alkemy-X Override ###

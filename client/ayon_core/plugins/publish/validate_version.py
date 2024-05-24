@@ -30,7 +30,7 @@ class ValidateVersion(pyblish.api.InstancePlugin,
         # Ignore workfile versions for now due to our
         # setup in Nuke where we publish workfiles as the same version (prerender)
         # quite often and this would throw warnings on every publish
-        if instance.data.get("family") == "workfile":
+        if instance.data.get("productType") == "workfile":
             return
         ### Ends Alkemy-X Override ###
 
