@@ -431,7 +431,7 @@ def generate_review_from_instance(
     logger.debug("Review read path: %s", read_path)
 
     # Create review output path
-    file_name = f"{review_repre['name']}_h264.mov"
+    file_name = f"{product_name}_{review_repre['name']}_h264.mov"
     output_path = os.path.join(
         staging_dir,
         file_name
