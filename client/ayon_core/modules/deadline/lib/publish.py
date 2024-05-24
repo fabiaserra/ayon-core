@@ -163,7 +163,7 @@ def validate_version(
         "task": task_name,
         "fps": publish_data.get("fps", context_data.get("fps")),
         "comment": publish_data.get("comment", ""),
-        "source": source_path,
+        "source": publish_data.get("source") or source_path,
         "overrideExistingFrame": False,
         "useSequenceForReview": True,
         "colorspace": publish_data.get("src_colorspace", "scene_linear"),
@@ -281,6 +281,7 @@ def publish_version(
         )
         if response:
             job_submissions.append(response)
+            instance_data["slate_frame"] = True
 
     instance_data["frameStart"] = int(representations[0]["frameStart"])
     instance_data["frameEnd"] = int(representations[0]["frameEnd"])
