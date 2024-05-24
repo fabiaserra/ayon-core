@@ -1103,6 +1103,10 @@ def apply_colorspace_project():
     support. See https://community.foundry.com/discuss/topic/137771/change-a-project-s-default-color-transform-with-python  # noqa
     for more details.
     """
+    ### Starts Alkemy-X Override ###
+    # we rely on setting $OCIO
+    return
+    ### Ends Alkemy-X Override ###
     # get presets for hiero
     project_name = get_current_project_name()
     imageio = get_project_settings(project_name)["hiero"]["imageio"]
