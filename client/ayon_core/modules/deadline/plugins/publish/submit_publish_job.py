@@ -183,9 +183,10 @@ class ProcessSubmittedJobOnFarm(pyblish.api.InstancePlugin,
     instance_transfer = {
         "slate": ["slateFrames", "slate"],
         "review": ["lutPath"],
-        "render2d": ["bakingNukeScripts", "version"],
+        "render2d": ["bakingNukeScripts", "version", "slate_frame"],
+        "prerender": ["slate_frame"],
         "renderlayer": ["convertToScanline"],
-        "plate.farm": ["main_plate", "cut_info_data", "sg_tags_data", "asset_working_format", "edit_note_data"],
+        "plate.farm": ["main_plate", "cut_info_data", "sg_tags_data", "asset_working_format", "edit_note_data", "sg_status"],
     }
 
     # list of family names to transfer to new family if present
