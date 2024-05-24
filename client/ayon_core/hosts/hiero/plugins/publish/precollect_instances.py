@@ -117,6 +117,13 @@ class PrecollectInstances(pyblish.api.ContextPlugin):
                 families.insert(0, "plate.farm")
             
             families.insert(0, str(product_type))
+
+            # Add sg status to data so we integrate it later to SG
+            if product_type == "plate":
+                data["sg_status"] = "plt"
+            elif product_type == "reference":
+                data["sg_status"] = "cqt"
+
             ### Ends Alkemy-X Override ###
 
             # TODO: remove backward compatibility
