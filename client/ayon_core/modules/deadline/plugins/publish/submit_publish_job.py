@@ -9,10 +9,10 @@ import clique
 import ayon_api
 import pyblish.api
 
+from openpype_modules.deadline.abstract_submit_deadline import requests_post
 from ayon_core.pipeline import publish
 from ayon_core.lib import EnumDef, is_in_tests
 from ayon_core.pipeline.version_start import get_versioning_start
-from ayon_core.modules.deadline.abstract_submit_deadline import requests_post
 
 from ayon_core.pipeline.farm.pyblish_functions import (
     create_skeleton_instance,
@@ -381,7 +381,7 @@ class ProcessSubmittedJobOnFarm(pyblish.api.InstancePlugin,
         self.log.debug("Submitting Deadline publish job ...")
 
         url = "{}/api/jobs".format(self.deadline_url)
-        auth = None  #instance.data["deadline"]["auth"]
+        auth = instance.data["deadline"]["auth"]
         response = requests_post(url, json=payload, timeout=10,
                                  auth=auth)
         if not response.ok:
@@ -540,13 +540,7 @@ class ProcessSubmittedJobOnFarm(pyblish.api.InstancePlugin,
             render_jobs = [render_job]
 
         # get default deadline webservice url from deadline module
-        self.deadline_url = instance.context.data["deadline"]["defaultUrl"]
-        # self.deadline_url = instance.data["deadline"]["url"]
-        ### Ends Alkemy-X Override ###
-
-        # if custom one is set in instance, use that
-        if instance.data.get("deadlineUrl"):
-            self.deadline_url = instance.data.get("deadlineUrl")
+        self.deadline_url = instance.data["deadline"]["url"]
         assert self.deadline_url, "Requires Deadline Webservice URL"
 
         ### Starts Alkemy-X Override ###
@@ -557,7 +551,7 @@ class ProcessSubmittedJobOnFarm(pyblish.api.InstancePlugin,
 
         # Inject deadline url to instances to query DL for job id for overrides
         for inst in instances:
-            inst["deadline"] = self.deadline_url
+            inst["deadline"] = instance.data["deadline"]
 
         # publish job file
         publish_job = {
