@@ -281,7 +281,7 @@ def publish_version(
         )
         if response:
             job_submissions.append(response)
-            instance_data["slate_frame"] = True
+            instance_data["slateFrame"] = True
 
     instance_data["frameStart"] = int(representations[0]["frameStart"])
     instance_data["frameEnd"] = int(representations[0]["frameEnd"])

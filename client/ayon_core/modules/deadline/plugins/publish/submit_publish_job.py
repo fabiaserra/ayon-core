@@ -182,9 +182,9 @@ class ProcessSubmittedJobOnFarm(pyblish.api.InstancePlugin,
     #     for every specified family
     instance_transfer = {
         "slate": ["slateFrames", "slate"],
-        "review": ["lutPath"],
-        "render2d": ["bakingNukeScripts", "version", "slate_frame"],
-        "prerender": ["slate_frame"],
+        "review": ["lutPath", "slateFrame"],
+        "render2d": ["bakingNukeScripts", "version", "slateFrame"],
+        "prerender": ["slateFrame"],
         "renderlayer": ["convertToScanline"],
         "plate.farm": ["main_plate", "cut_info_data", "sg_tags_data", "asset_working_format", "edit_note_data", "sg_status"],
     }
