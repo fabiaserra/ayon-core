@@ -74,7 +74,7 @@ TEMP_FILE_PATTERNS = {
     re.compile(r".*_bak\d+\.hip$"),
     re.compile(r".*\.hrox\.autosave$"),
     re.compile(r".*_metadata.json"),
-    re.compile(r".*_exr_h264.mov"),
+    re.compile(r".*exr_h264.mov"),
 }
 
 # Keywords to ignore when walking into directories to avoid deleting its versions
