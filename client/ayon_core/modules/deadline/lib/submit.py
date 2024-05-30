@@ -36,7 +36,7 @@ def payload_submit(
     if not job_dependencies:
         job_dependencies = []
 
-    frames = "0" if not frame_range else f"{frame_range[0]}-{frame_range[1]}"
+    frames = frame_range or "0"
 
     payload = {
         "JobInfo": {
@@ -79,6 +79,7 @@ def payload_submit(
         "AYON_TASK_NAME",
         "AYON_PROJECT_NAME",
         "AYON_APP_NAME",
+        "AYON_BUNDLE_NAME",
         "OCIO",
         "USER",
         "AYON_SG_USERNAME",
@@ -101,7 +102,7 @@ def payload_submit(
     )
 
     plugin = payload["JobInfo"]["Plugin"]
-    logger.debug("using render plugin : {}".format(plugin))
+    logger.debug("Using render plugin : {}".format(plugin))
 
     logger.debug("Submitting..")
     logger.debug(json.dumps(payload, indent=4, sort_keys=True))

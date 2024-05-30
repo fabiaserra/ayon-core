@@ -76,7 +76,7 @@ def get_representations(
     representations = []
     for rep_name, file_path in exp_representations.items():
 
-        files, ext, frame_start, frame_end = path_tools.convert_to_sequence(
+        files, ext, frame_range = path_tools.convert_to_sequence(
             file_path
         )
         if not files:
@@ -111,12 +111,15 @@ def get_representations(
         if len(files) == 1:
             files = files[0]
 
+        frame_start, frame_end = path_tools.get_frame_start_end_from_range(frame_range)
+
         rep = {
             "name": rep_name,
             "ext": ext,
             "files": files,
             "frameStart": frame_start,
             "frameEnd": frame_end,
+            "frameRange": frame_range,
             # If expectedFile are absolute, we need only filenames
             "stagingDir": staging,
             "fps": instance_data.get("fps"),

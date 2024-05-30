@@ -41,6 +41,10 @@ class ExtractReviewNuke(publish.Extractor):
 
         instance.data["toBeRenderedOn"] = "deadline"
 
+        # Hard-code the addition of 'slateFrame'
+        # TODO: make it dynamic based on whether it's activated on the .nk template
+        instance.data["slateFrame"] = True
+
         context = instance.context
 
         anatomy = context.data["anatomy"]
@@ -70,7 +74,7 @@ class ExtractReviewNuke(publish.Extractor):
                 # Create review output path
                 output_path = os.path.join(
                     staging_dir,
-                    f"{repre['name']}_h264.mov"
+                    f"{instance.data['productName']}_{repre['name']}_h264.mov"
                 )
 
                 # Get source colorspace from representation

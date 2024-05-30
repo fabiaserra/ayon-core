@@ -182,10 +182,11 @@ class ProcessSubmittedJobOnFarm(pyblish.api.InstancePlugin,
     #     for every specified family
     instance_transfer = {
         "slate": ["slateFrames", "slate"],
-        "review": ["lutPath"],
-        "render2d": ["bakingNukeScripts", "version"],
+        "review": ["lutPath", "slateFrame"],
+        "render2d": ["bakingNukeScripts", "version", "slateFrame"],
+        "prerender": ["slateFrame"],
         "renderlayer": ["convertToScanline"],
-        "plate.farm": ["main_plate", "cut_info_data", "sg_tags_data", "asset_working_format", "edit_note_data"],
+        "plate.farm": ["main_plate", "cut_info_data", "sg_tags_data", "asset_working_format", "edit_note_data", "sg_status"],
     }
 
     # list of family names to transfer to new family if present
@@ -382,8 +383,9 @@ class ProcessSubmittedJobOnFarm(pyblish.api.InstancePlugin,
 
         url = "{}/api/jobs".format(self.deadline_url)
         auth = instance.data["deadline"]["auth"]
-        response = requests_post(url, json=payload, timeout=10,
-                                 auth=auth)
+        verify = instance.data["deadline"]["verify"]
+        response = requests_post(
+            url, json=payload, timeout=10, auth=auth, verify=verify)
         if not response.ok:
             raise Exception(response.text)
 
@@ -536,13 +538,8 @@ class ProcessSubmittedJobOnFarm(pyblish.api.InstancePlugin,
             render_job["Props"]["User"] = instance.context.data.get(
                 "deadlineUser", getpass.getuser())
 
-            render_job["Props"]["Env"] = {
-                "FTRACK_API_USER": os.environ.get("FTRACK_API_USER"),
-                "FTRACK_API_KEY": os.environ.get("FTRACK_API_KEY"),
-                "FTRACK_SERVER": os.environ.get("FTRACK_SERVER"),
-            }
+            render_job["Props"]["Env"] = {}
             render_jobs = [render_job]
-        ### Ends Alkemy-X Override ###
 
         # get default deadline webservice url from deadline module
         self.deadline_url = instance.data["deadline"]["url"]

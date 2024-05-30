@@ -1,3 +1,4 @@
+import os
 import pyblish
 
 from ayon_core.pipeline import AYON_INSTANCE_ID, AVALON_INSTANCE_ID
@@ -92,19 +93,38 @@ class PrecollectInstances(pyblish.api.ContextPlugin):
 
             folder_path, folder_name = self._get_folder_data(tag_data)
 
-            # insert family into families
+            families = [str(f) for f in tag_data["families"]]
+
+            product_type = tag_data.get("productType")
+            if product_type is None:
+                # backward compatibility: family -> productType
+                product_type = tag_data.get("family")
+
+            # backward compatibility: product_type should not be missing
+            if not product_type:
+                self.log.error(
+                    "Product type is not defined for: {}".format(folder_path))
+                
             ### Starts Alkemy-X Override ###
             # Hard-code the addition of `.farm` suffix to the families so plugins get
             # filtered by it and we can control when the submit publish job plugin
             # gets executed. We can do this because in Hiero we have decided to always
             # publish in the farm
-            submit_to_farm = tag_data["family"] == "plate"
+            submit_to_farm = product_type == "plate"
             if submit_to_farm:
-                family = "{}.farm".format(tag_data["family"])
-            else:
-                family = tag_data["family"]
+                # Insert plate.farm family so we run the plugins
+                # meant to run for plate ingest in the farm
+                families.insert(0, "plate.farm")
+            
+            families.insert(0, str(product_type))
+
+            # Add sg status to data so we integrate it later to SG
+            if product_type == "plate":
+                data["sg_status"] = "plt"
+            elif product_type == "reference":
+                data["sg_status"] = "cqt"
+
             ### Ends Alkemy-X Override ###
-            families = [str(f) for f in tag_data["families"]]
 
             # TODO: remove backward compatibility
             product_name = tag_data.get("productName")
@@ -117,28 +137,20 @@ class PrecollectInstances(pyblish.api.ContextPlugin):
                 self.log.error(
                     "Product name is not defined for: {}".format(folder_path))
 
-            # TODO: remove backward compatibility
-            product_type = tag_data.get("productType")
-            if product_type is None:
-                # backward compatibility: family -> productType
-                product_type = tag_data.get("family")
-
-            # backward compatibility: product_type should not be missing
-            if not product_type:
-                self.log.error(
-                    "Product type is not defined for: {}".format(folder_path))
-
             # form label
             label = "{} -".format(folder_path)
             if folder_name != clip_name:
                 label += " ({})".format(clip_name)
             label += " {}".format(product_name)
+            label += " {}".format("[" + ", ".join(families) + "]")
 
             data.update({
                 "name": "{}_{}".format(folder_path, product_name),
                 "label": label,
+                "task": os.getenv("AYON_TASK_NAME"),
                 "productName": product_name,
                 "productType": product_type,
+                "family": product_type,
                 "folderPath": folder_path,
                 "asset_name": folder_name,
                 "item": track_item,
@@ -152,7 +164,8 @@ class PrecollectInstances(pyblish.api.ContextPlugin):
 
                 # add all additional tags
                 "tags": phiero.get_track_item_tags(track_item),
-                "newAssetPublishing": True
+                "newAssetPublishing": True,
+                "farm": submit_to_farm,
             })
 
             # otio clip data
@@ -301,7 +314,7 @@ class PrecollectInstances(pyblish.api.ContextPlugin):
         label += " {}".format(product_name)
 
         data.update({
-            "name": "{}_{}".format(folder_path, subset),
+            "name": "{}_{}".format(folder_path, product_name),
             "label": label,
             "productName": product_name,
             "productType": product_type,

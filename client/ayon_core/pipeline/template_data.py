@@ -1,9 +1,7 @@
 import ayon_api
 
 from ayon_core.settings import get_studio_settings
-from ayon_core.lib import prepare_template_data
 from ayon_core.lib.local_settings import get_ayon_username
-from ayon_core.pipeline import context_tools
 
 
 def get_general_template_data(settings=None):
@@ -174,6 +172,8 @@ def get_template_data(
     Returns:
         Dict[str, Any]: Data prepared for filling workdir template.
     """
+    from ayon_core.pipeline import context_tools
+    from ayon_core.lib import prepare_template_data
 
     template_data = get_general_template_data(settings)
     template_data.update(get_project_template_data(project_entity))

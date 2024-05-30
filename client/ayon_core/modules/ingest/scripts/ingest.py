@@ -82,6 +82,19 @@ FUZZY_NAME_OVERRIDES = {
     },
 }
 
+# Convert the dictionary to use regular expressions
+COMPILED_FUZZY_NAME_OVERRIDES = {
+    re.compile("|".join(map(re.escape, keywords))): value
+    for keywords, value in FUZZY_NAME_OVERRIDES.items()
+}
+
+# Set of names to look for in the path and add them to the subset name
+# if they exist
+PRODUCT_NAME_VARIANTS = {
+    re.compile(r"character\d+"),
+    re.compile("hard_edge"),
+}
+
 # List of fields that are required in the products in order to publish them
 MUST_HAVE_FIELDS = {
     "folder_path",
@@ -221,7 +234,7 @@ def validate_products(
 
     for product_fields, product_data in products.items():
         folder_path, task, product_name = product_fields
-        msg, success = publish.validate_version(
+        msg, success, _ = publish.validate_version(
             project_name,
             folder_path,
             task,
@@ -613,16 +626,15 @@ def get_product_from_filepath(
 
     # Go through the fuzzy name overrides and apply them if we find
     # a match
-    for fuzzy_names, overrides in FUZZY_NAME_OVERRIDES.items():
-        for fuzzy_name in fuzzy_names:
-            if fuzzy_name in filepath.lower():
-                logger.debug(
-                    "Found fuzzy name '%s' in filename '%s', applying overrides %s",
-                    fuzzy_name,
-                    filename,
-                    overrides,
-                )
-                publish_data.update(overrides)
+    for pattern, overrides in COMPILED_FUZZY_NAME_OVERRIDES.items():
+        if pattern.search(filepath.lower()):
+            logger.debug(
+                "Found pattern '%s' in filename '%s', applying overrides %s",
+                pattern,
+                filename,
+                overrides,
+            )
+            publish_data.update(overrides)
 
     # If task name is still not one of the supported ones, mark it as None so we
     # can clearly see what happened and not error out during the publish
@@ -654,6 +666,13 @@ def get_product_from_filepath(
     # If no Product name found yet just use the filename
     if not publish_data["product_name"]:
         publish_data["product_name"] = filename.split(".")[0]
+
+    # Quick hack to allow for extra data that our vendors send as folder names to the
+    # subset
+    for pattern_re in PRODUCT_NAME_VARIANTS:
+        match = pattern_re.search(filepath.lower())
+        if match:
+            publish_data["product_name"] += f"_{match.group()}"
 
     # If extension is an image, guess input colorspace
     if extension in IMAGE_EXTENSIONS:

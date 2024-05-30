@@ -64,7 +64,7 @@ def generate_review(
     # Add environment variables required to run Nuke script
     task_env = {
         "_AX_REVIEW_NUKESCRIPT": nuke_review_script,
-        "_AX_REVIEW_FRAMES": "{0}_{1}".format(
+        "_AX_REVIEW_FRAMES": review_data.get("frame_range") or "{0}-{1}".format(
             int(frame_start), int(frame_end)
         ),
         "_AX_FRAME_OFFSET": review_data.get("frame_offset", "0"),
@@ -93,6 +93,7 @@ def generate_review(
         "Version": "15.0",
         "UseGpu": False,
         "OutputFilePath": output_dir,
+        "ContinueOnError": True,
     }
 
     logger.info("Submitting Nuke review generation")
@@ -109,7 +110,7 @@ def generate_review(
         plugin_data=plugin_data,
         batch_name=review_data.get("batch_name", task_name),
         task_name=task_name,
-        frame_range=(frame_start, frame_end),
+        frame_range="{0}-{1}".format(int(frame_start), int(frame_end)),
         department="",
         group=dl_constants.NUKE_CPU_GROUP.format("15", "0"),
         comment=review_data.get("comment", ""),

@@ -151,7 +151,7 @@ class CollectOtioSubsetResources(pyblish.api.InstancePlugin):
             "frame_start-frame_end: {}-{}".format(frame_start, frame_end))
 
         ### Starts Alkemy-X Override ###
-        self.family = instance.data["family"]
+        self.productType = instance.data["productType"]
         ### Ends Alkemy-X Override ###
         if is_sequence:
             # file sequence way
@@ -248,11 +248,11 @@ class CollectOtioSubsetResources(pyblish.api.InstancePlugin):
 
         ### Starts Alkemy-X Override ###
         representation_data["tags"] = []
-        if self.family in SG_UPLOAD_FAMILIES:
+        if self.productType in SG_UPLOAD_FAMILIES:
             self.log.debug("Adding 'shotgridreview' to representation tags")
             representation_data["tags"].append("shotgridreview")
 
-        if self.family in SG_GENERATE_REVIEW_FAMILIES:
+        if self.productType in SG_GENERATE_REVIEW_FAMILIES:
             self.log.debug("Adding 'review' to representation tags")
             representation_data["tags"].append("review")
 

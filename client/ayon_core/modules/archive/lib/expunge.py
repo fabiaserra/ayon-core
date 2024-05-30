@@ -74,7 +74,7 @@ TEMP_FILE_PATTERNS = {
     re.compile(r".*_bak\d+\.hip$"),
     re.compile(r".*\.hrox\.autosave$"),
     re.compile(r".*_metadata.json"),
-    re.compile("exr_h264.mov"),
+    re.compile(r".*exr_h264.mov"),
 }
 
 # Keywords to ignore when walking into directories to avoid deleting its versions
@@ -646,7 +646,7 @@ class ArchiveProject:
                         not source_path.startswith(f"/proj/{self.proj_code}"):
                     continue
 
-                source_files, _, _, _ = path_tools.convert_to_sequence(
+                source_files, _, _ = path_tools.convert_to_sequence(
                     source_path
                 )
                 # For source paths ending with .exr we try create a symlink path from
@@ -664,7 +664,7 @@ class ArchiveProject:
                 )
                 dir_path, original_name = os.path.split(source_path)
                 delete_path = os.path.join(dir_path, f"{DELETE_PREFIX}*{original_name}")
-                source_files, _, _, _ = path_tools.convert_to_sequence(
+                source_files, _, _ = path_tools.convert_to_sequence(
                     delete_path
                 )
                 if not source_files:
@@ -686,7 +686,7 @@ class ArchiveProject:
                 delete_path = os.path.join(dir_path, f"{DELETE_PREFIX}*{original_name}")
                 source_files = glob.glob(delete_path)
                 if not source_files:
-                    source_files, _, _, _ = path_tools.convert_to_sequence(
+                    source_files, _, _ = path_tools.convert_to_sequence(
                         delete_path
                     )
                     if not source_files:

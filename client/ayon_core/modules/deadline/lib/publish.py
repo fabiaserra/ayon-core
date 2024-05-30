@@ -4,7 +4,7 @@ import json
 
 import ayon_api
 
-from ayon_core.lib import Logger, path_tools
+from ayon_core.lib import Logger, path_tools, run_subprocess
 from ayon_core.pipeline import Anatomy
 from ayon_core.pipeline.template_data import get_template_data
 from ayon_core.modules.deadline import constants as dl_constants
@@ -94,9 +94,12 @@ def validate_version(
     publish_data,
     overwrite_version=False,
     force_task_creation=False,
+    product_group=None,
 ):
     # String representation of product being published
     item_str = f"Folder Path: {folder_path} - Task: {task_name} - Product Type: {product_type} - Product Name: {product_name}"
+
+    version_data = {}
 
     # Validate that all required fields exist
     if not all(
@@ -113,7 +116,7 @@ def validate_version(
             f"{item_str} -> Can't publish version without all arguments."
         )
         logger.error(msg)
-        return msg, False
+        return msg, False, version_data
 
     folder_entity = ayon_api.get_folder_by_path(project_name, folder_path)
     if not folder_entity:
@@ -121,8 +124,9 @@ def validate_version(
             f"{item_str} -> Couldn't find folder in project with path {folder_path}, make sure it exists."
         )
         logger.error(msg)
-        return msg, False
+        return msg, False, version_data
 
+    version_data["folder_entity"] = folder_entity
     context_data = folder_entity["data"]
 
     # Validate that the version doesn't exist if we choose to not overwrite
@@ -134,7 +138,7 @@ def validate_version(
                 f"{item_str} -> Version already exists."
             )
             logger.error(msg)
-            return msg, False
+            return msg, False, version_data
 
     # Validate that the task exists
     if not check_task_exists(project_name, folder_entity, task_name, force_task_creation):
@@ -142,11 +146,12 @@ def validate_version(
             f"{item_str} -> Task '{task_name}' doesn't exist."
         )
         logger.error(msg)
-        return msg, False
+        return msg, False, version_data
 
     # TODO: write some logic that finds the main path from the list of
     # representations
     source_path = list(expected_representations.values())[0]
+    version_data["source_path"] = source_path
 
     instance_data = {
         "project": project_name,
@@ -158,27 +163,42 @@ def validate_version(
         "task": task_name,
         "fps": publish_data.get("fps", context_data.get("fps")),
         "comment": publish_data.get("comment", ""),
-        "source": source_path,
+        "source": publish_data.get("source") or source_path,
         "overrideExistingFrame": False,
         "useSequenceForReview": True,
         "colorspace": publish_data.get("src_colorspace", "scene_linear"),
         "version": publish_data.get("version"),
         "outputDir": os.path.dirname(source_path),
+        "convertToScanline": publish_data.get("convertToScanline", False),
+        "stagingDir_persistent": True,
     }
 
-    logger.debug("Getting representations...")
+    if product_group:
+        instance_data["productGroup"] = product_group
+
+    version_data["instance_data"] = instance_data
+
+    add_review = product_type in REVIEW_FAMILIES
+    # Quick dirty solution to avoid generating reviews for certain
+    # tasks
+    if task_name in TASKS_TO_IGNORE_REVIEW:
+        add_review = False
+    version_data["add_review"] = add_review
+
     representations = utils.get_representations(
         instance_data,
         expected_representations,
+        add_review=add_review,
+        publish_to_sg=product_type in PUBLISH_TO_SG_FAMILIES,
     )
     if not representations:
         msg = f"{item_str} -> No representations could be found on expected dictionary: {expected_representations}"
         logger.error(msg)
-        return msg, False
+        return msg, False, None, None
 
-    msg = f"{item_str} -> Valid"
+    version_data["representations"] = representations
 
-    return msg, True
+    return f"{item_str} -> Valid", True, version_data
 
 
 def publish_version(
@@ -192,101 +212,33 @@ def publish_version(
     overwrite_version=False,
     force_task_creation=False,
     product_group=None,
+    local_publish=False
 ):
     # String representation of product being published
     item_str = f"Folder Path: {folder_path} - Task: {task_name} - Product Type: {product_type} - Product Name: {product_name}"
 
-    # Validate that all required fields exist
-    if not all(
-        [
-            project_name,
-            folder_path,
-            task_name,
-            product_type,
-            product_name,
-            expected_representations
-        ]
-    ):
-        msg = (
-            f"{item_str} -> Can't publish version without all arguments."
-        )
-        logger.error(msg)
-        return msg, False
-
-    folder_entity = ayon_api.get_folder_by_path(project_name, folder_path)
-    if not folder_entity:
-        msg = (
-            f"{item_str} -> Couldn't find folder in project with path {folder_path}, make sure it exists."
-        )
-        logger.error(msg)
-        return msg, False
-    context_data = folder_entity["data"]
-
-    # Validate that the version doesn't exist if we choose to not overwrite
-    if not overwrite_version and publish_data.get("version"):
-        if check_version_exists(
-            project_name, folder_entity, product_name, publish_data.get("version")
-        ):
-            msg = (
-                f"{item_str} -> Version already exists."
-            )
-            logger.error(msg)
-            return msg, False
-
-    # Validate that the task exists
-    if not check_task_exists(project_name, folder_entity, task_name, force_task_creation):
-        msg = (
-            f"{item_str} -> Task '{task_name}' doesn't exist."
-        )
-        logger.error(msg)
-        return msg, False
-
-    # TODO: write some logic that finds the main path from the list of
-    # representations
-    source_path = list(expected_representations.values())[0]
-
-    instance_data = {
-        "project": project_name,
-        "productType": product_type,
-        "productName": product_name,
-        "family": product_type,
-        "families": publish_data.get("families", []),
-        "folderPath": folder_path,
-        "task": task_name,
-        "fps": publish_data.get("fps", context_data.get("fps")),
-        "comment": publish_data.get("comment", ""),
-        "source": source_path,
-        "overrideExistingFrame": False,
-        "useSequenceForReview": True,
-        "colorspace": publish_data.get("src_colorspace", "scene_linear"),
-        "version": publish_data.get("version"),
-        "outputDir": os.path.dirname(source_path),
-        "convertToScanline": publish_data.get("convertToScanline", False),
-        "stagingDir_persistent": True,
-    }
-
-    if product_group:
-        instance_data["productGroup"] = product_group
-
-    logger.debug("Getting representations...")
-
-    add_review = product_type in REVIEW_FAMILIES
-
-    # Quick dirty solution to avoid generating reviews for certain
-    # tasks
-    if task_name in TASKS_TO_IGNORE_REVIEW:
-        add_review = False
-
-    representations = utils.get_representations(
-        instance_data,
+    # Validate version while creating representations that we would need to publish
+    msg, success, version_data = validate_version(
+        project_name,
+        folder_path,
+        task_name,
+        product_type,
+        product_name,
         expected_representations,
-        add_review=add_review,
-        publish_to_sg=product_type in PUBLISH_TO_SG_FAMILIES,
+        publish_data,
+        overwrite_version,
+        force_task_creation,
+        product_group
     )
-    if not representations:
-        msg = f"{item_str} -> No representations could be found on expected dictionary: {expected_representations}"
-        logger.error(msg)
+    if not success:
         return msg, False
+
+    # Unpack data created on validate version function
+    instance_data = version_data["instance_data"]
+    representations = version_data["representations"]
+    folder_entity = version_data["folder_entity"]
+    add_review = version_data["add_review"]
+    source_path = version_data["source_path"]
 
     # Get project code to grab the project code and add it to the task name
     project_entity = ayon_api.get_project(project_name)
@@ -315,81 +267,21 @@ def publish_version(
     # the representation that is an image extension
     job_submissions = []
     if add_review:
-        anatomy = Anatomy(project_name)
-
-        review_repre = None
-        for repre in representations:
-            # Skip generating review if one of the repres is already
-            # a supported review extension
-            if repre["ext"] in review.VIDEO_EXTENSIONS:
-                review_repre = None
-                break
-            elif repre["ext"] in review.GENERATE_REVIEW_EXTENSIONS:
-                review_repre = repre
-
-        if review_repre:
-            staging_dir = anatomy.fill_root(
-                review_repre["stagingDir"]
-            )
-
-            # Set output colorspace default to 'shot_lut' unless it's a review/reference family
-            out_colorspace = "shot_lut"
-            if product_type in IGNORE_LUT_FAMILIES:
-                out_colorspace = ""
-
-            # Create dictionary with some useful data required to submit
-            # Nuke review job to the farm
-            review_data = {
-                "comment": publish_data.get("comment", ""),
-                "batch_name": publish_data.get("jobBatchName") or deadline_task_name,
-                "src_colorspace": publish_data.get("src_colorspace", "scene_linear"),
-                # We default the output colorspace to out_colorspace if it's not
-                # explicitly set on the publish_data dictionary
-                "out_colorspace": publish_data.get("out_colorspace", out_colorspace),
-                "product_name": product_name,
-                "contact_sheet": True if product_name.endswith("_util") else False,
-            }
-
-            # Create read path to pass to Nuke task
-            basename = review_repre["files"][0] if isinstance(review_repre["files"], list) else review_repre["files"]
-            read_path = os.path.join(staging_dir, basename)
-            read_path = path_tools.replace_frame_number_with_token(read_path, "#", padding=True)
-            logger.debug("Review read path: %s", read_path)
-
-            # Create review output path
-            file_name = f"{review_repre['name']}_h264.mov"
-            output_path = os.path.join(
-                staging_dir,
-                file_name
-            )
-            logger.debug("Review output path: %s", output_path)
-
-            response = review.generate_review(
-                project_name,
-                project_code,
-                folder_path,
-                task_name,
-                read_path,
-                output_path,
-                review_repre["frameStart"],
-                review_repre["frameEnd"],
-                review_data
-            )
+        response = generate_review_from_instance(
+            project_name,
+            project_code,
+            folder_path,
+            task_name,
+            product_type,
+            product_name,
+            publish_data,
+            representations,
+            instance_data,
+            deadline_task_name,
+        )
+        if response:
             job_submissions.append(response)
-
-            # Add review as a new representation to publish
-            representations.append(
-                {
-                    "name": "h264",
-                    "ext": "mov",
-                    "files": file_name,
-                    "frameStart": repre["frameStart"],
-                    "frameEnd": repre["frameEnd"],
-                    "stagingDir": staging_dir,
-                    "fps": instance_data.get("fps"),
-                    "tags": ["shotgridreview"],
-                }
-            )
+            instance_data["slateFrame"] = True
 
     instance_data["frameStart"] = int(representations[0]["frameStart"])
     instance_data["frameEnd"] = int(representations[0]["frameEnd"])
@@ -434,17 +326,6 @@ def publish_version(
         "AYON_BUNDLE_NAME": os.getenv("AYON_BUNDLE_NAME")
     }
 
-    logger.debug("Submitting payload...")
-    response = submit.payload_submit(
-        plugin="Ayon",
-        plugin_data=plugin_data,
-        batch_name=publish_data.get("jobBatchName") or deadline_task_name,
-        task_name=deadline_task_name,
-        group=dl_constants.AYON_GROUP,
-        extra_env=extra_env,
-        job_dependencies=job_submissions
-    )
-
     # publish job file
     publish_job = {
         "folderPath": instance_data["folderPath"],
@@ -457,13 +338,133 @@ def publish_version(
         "comment": instance_data["comment"],
         "job": {},
         "instances": instances,
-        "deadline_publish_job_id": response.get("id")
     }
 
-    logger.info("Writing json file: {}".format(metadata_path))
-    with open(metadata_path, "w") as f:
-        json.dump(publish_job, f, indent=4, sort_keys=True)
+    if local_publish:
+        logger.info("Writing json file: {}".format(metadata_path))
+        with open(metadata_path, "w") as f:
+            json.dump(publish_job, f, indent=4, sort_keys=True)
 
-    msg = f"{item_str} -> Deadline Job {response.get('_id')}"
+        publish_cmd = ["/pipe/ayon/release/current/ayon"] + publish_args
+        try:
+            run_subprocess(publish_cmd, env=extra_env)
+        except RuntimeError as error:
+            msg = f"{item_str} -> Failed to publish locally: {error}"
+            return msg, False
+        
+        msg = f"{item_str} -> Local publish"
+    else:
+        logger.debug("Submitting payload...")
+        response = submit.payload_submit(
+            plugin="Ayon",
+            plugin_data=plugin_data,
+            batch_name=publish_data.get("jobBatchName") or deadline_task_name,
+            task_name=deadline_task_name,
+            group=dl_constants.AYON_GROUP,
+            extra_env=extra_env,
+            job_dependencies=job_submissions
+        )
+        deadline_job_id = response.get("_id")
+        publish_job["deadline_publish_job_id"] = deadline_job_id
+        msg = f"{item_str} -> Deadline Job {deadline_job_id}"
+
+        logger.info("Writing json file: {}".format(metadata_path))
+        with open(metadata_path, "w") as f:
+            json.dump(publish_job, f, indent=4, sort_keys=True)
 
     return msg, True
+
+
+def generate_review_from_instance(
+    project_name,
+    project_code,
+    folder_path,
+    task_name,
+    product_type,
+    product_name,
+    publish_data,
+    representations,
+    instance_data,
+    deadline_task_name,
+):
+    anatomy = Anatomy(project_name)
+
+    review_repre = None
+    for repre in representations:
+        # Skip generating review if one of the repres is already
+        # a supported review extension
+        if repre["ext"] in review.VIDEO_EXTENSIONS:
+            review_repre = None
+            break
+        elif repre["ext"] in review.GENERATE_REVIEW_EXTENSIONS:
+            review_repre = repre
+
+    if not review_repre:
+        return None
+    
+    staging_dir = anatomy.fill_root(
+        review_repre["stagingDir"]
+    )
+
+    # Set output colorspace default to 'shot_lut' unless it's a review/reference family
+    out_colorspace = "shot_lut"
+    if product_type in IGNORE_LUT_FAMILIES:
+        out_colorspace = ""
+
+    # Create dictionary with some useful data required to submit
+    # Nuke review job to the farm
+    review_data = {
+        "comment": publish_data.get("comment", ""),
+        "batch_name": publish_data.get("jobBatchName") or deadline_task_name,
+        "src_colorspace": publish_data.get("src_colorspace", "scene_linear"),
+        # We default the output colorspace to out_colorspace if it's not
+        # explicitly set on the publish_data dictionary
+        "out_colorspace": publish_data.get("out_colorspace", out_colorspace),
+        "product_name": product_name,
+        "contact_sheet": True if "_util_" in product_name else False,
+        "frame_range": review_repre["frameRange"],
+    }
+
+    # Create read path to pass to Nuke task
+    basename = review_repre["files"][0] if isinstance(review_repre["files"], list) else review_repre["files"]
+    read_path = os.path.join(staging_dir, basename)
+    read_path = path_tools.replace_frame_number_with_token(read_path, "#", padding=True)
+    logger.debug("Review read path: %s", read_path)
+
+    # Create review output path
+    file_name = f"{product_name}_{review_repre['name']}_h264.mov"
+    output_path = os.path.join(
+        staging_dir,
+        file_name
+    )
+    logger.debug("Review output path: %s", output_path)
+
+    response = review.generate_review(
+        project_name,
+        project_code,
+        folder_path,
+        task_name,
+        read_path,
+        output_path,
+        review_repre["frameStart"],
+        review_repre["frameEnd"],
+        review_data
+    )
+
+    # Add future generated review to representations that will be published
+    if response:
+        # Add review as a new representation to publish
+        representations.append(
+            {
+                "name": "h264",
+                "ext": "mov",
+                "files": file_name,
+                "frameStart": repre["frameStart"],
+                "frameEnd": repre["frameEnd"],
+                "stagingDir": staging_dir,
+                "fps": instance_data.get("fps"),
+                "tags": ["shotgridreview"],
+            }
+        )
+
+    return response
