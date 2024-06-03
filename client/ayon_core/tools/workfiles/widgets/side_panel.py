@@ -149,20 +149,39 @@ class SidePanelWidget(QtWidgets.QWidget):
             workfile_info.creation_time)
         modification_time = datetime.datetime.fromtimestamp(
             workfile_info.modification_time)
+
+        user_items_by_name = self._controller.get_user_items_by_name()
+
+        def convert_username(username):
+            user_item = user_items_by_name.get(username)
+            if user_item is not None and user_item.full_name:
+                return user_item.full_name
+            return username
+
+        created_lines = [
+            creation_time.strftime(datetime_format)
+        ]
+        if workfile_info.created_by:
+            created_lines.insert(
+                0, convert_username(workfile_info.created_by)
+            )
+
+        modified_lines = [
+            modification_time.strftime(datetime_format)
+        ]
+        if workfile_info.updated_by:
+            modified_lines.insert(
+                0, convert_username(workfile_info.updated_by)
+            )
+
         lines = (
             "<b>Size:</b>",
             size_value,
             "<b>Created:</b>",
-            creation_time.strftime(datetime_format),
+            "<br/>".join(created_lines),
             "<b>Modified:</b>",
-            modification_time.strftime(datetime_format)
+            "<br/>".join(modified_lines),
         )
-        username = self._get_user_name(filepath)
-        if username:
-            lines += (
-                "<b>User:</b>",
-                username,
-            )
 
         dcc_version = self._get_dcc_version(filepath)
         if dcc_version:
@@ -177,19 +196,6 @@ class SidePanelWidget(QtWidgets.QWidget):
         # Set as empty string
         self._details_input.setPlainText("")
         self._details_input.appendHtml("<br>".join(lines))
-
-    def _get_user_name(self, file):
-        """Get user name from file path"""
-        # Only run on Unix because pwd module is not available on Windows.
-        # NOTE: we tried adding "win32security" module but it was not working
-        # on all hosts so we decided to just support Linux until migration
-        # to Ayon
-        if platform.system().lower() == "windows":
-            return None
-        import pwd
-
-        filestat = os.stat(file)
-        return pwd.getpwuid(filestat.st_uid).pw_name
 
     def _get_nuke_version_from_file(self, filepath):
         with open(filepath, "r") as file:

@@ -258,8 +258,9 @@ def deliver_sequence(
 
     ### Starts Alkemy-X Override ###
     if not template_str:
-        delivery_templates = anatomy.templates.get("delivery") or {}
-        delivery_template = delivery_templates.get(template_name)
+        delivery_template = anatomy.get_template_item(
+            "delivery", template_name, "path", default=None
+        )
         if delivery_template is None:
             msg = (
                 "Delivery template \"{}\" in anatomy of project \"{}\""
@@ -270,7 +271,7 @@ def deliver_sequence(
 
         # Check if 'frame' key is available in template which is required
         #   for sequence delivery
-        if "{frame" not in delivery_template:
+        if "{frame" not in delivery_template.template:
             msg = (
                 "Delivery template \"{}\" in anatomy of project \"{}\""
                 "does not contain '{{frame}}' key to fill. Delivery of sequence"

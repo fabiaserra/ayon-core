@@ -510,11 +510,11 @@ class ProcessSubmittedJobOnFarm(pyblish.api.InstancePlugin,
         # Make 'jobs' argument a list so we can pass multiple dependency jobs
         # If we have multiple submission jobs, we grab that key instead
         if "deadlineSubmissionJobs" in instance.data:
-                render_jobs = instance.data.pop("deadlineSubmissionJobs", [])
+            render_jobs = instance.data.pop("deadlineSubmissionJobs", [])
         else:
-                render_job = instance.data.pop("deadlineSubmissionJob", None)
-                if render_job:
-                    render_jobs = [render_job]
+            render_job = instance.data.pop("deadlineSubmissionJob", None)
+            if render_job:
+                render_jobs = [render_job]
 
         if not render_jobs:
             import getpass

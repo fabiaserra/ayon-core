@@ -5,7 +5,6 @@ import getpass
 import json
 
 from ayon_core.lib import Logger
-from ayon_core.lib import is_running_from_build
 
 from ayon_core.modules.deadline import constants
 
