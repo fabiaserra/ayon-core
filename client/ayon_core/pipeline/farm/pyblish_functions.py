@@ -255,7 +255,8 @@ def create_skeleton_instance(
         "useSequenceForReview": data.get("useSequenceForReview", True),
         # map inputVersions `ObjectId` -> `str` so json supports it
         "inputVersions": list(map(str, data.get("inputVersions", []))),
-        "colorspace": data.get("colorspace")
+        "colorspace": data.get("colorspace"),
+        "publish_attributes": data.get("publish_attributes"),
     }
 
     # skip locking version if we are creating v01

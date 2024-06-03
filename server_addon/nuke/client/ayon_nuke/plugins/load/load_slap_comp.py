@@ -3,8 +3,8 @@ import os
 import nuke
 
 from ayon_core.pipeline import load
-from ayon_core.hosts.nuke.api import pipeline
-from ayon_core.hosts.nuke.plugins.load import load_clip
+from ayon_nuke.api import pipeline
+from ayon_nuke.plugins.load import load_clip
 
 
 class LoadSlapComp(load.LoaderPlugin):

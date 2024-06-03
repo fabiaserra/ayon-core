@@ -263,12 +263,15 @@ class ActionDelegate(QtWidgets.QStyledItemDelegate):
 
         super(ActionDelegate, self).paint(painter, option, index)
 
-        if index.data(FORCE_NOT_OPEN_WORKFILE_ROLE):
-            rect = QtCore.QRectF(
-                option.rect.x(), option.rect.height(), 5, 5)
-            painter.setPen(QtCore.Qt.NoPen)
-            painter.setBrush(QtGui.QColor(200, 0, 0))
-            painter.drawEllipse(rect)
+        ### Starts Alkemy-X Override ###
+        # Hide red dot on launcher as it's distracting for us
+        # if index.data(FORCE_NOT_OPEN_WORKFILE_ROLE):
+        #     rect = QtCore.QRectF(
+        #         option.rect.x(), option.rect.height(), 5, 5)
+        #     painter.setPen(QtCore.Qt.NoPen)
+        #     painter.setBrush(QtGui.QColor(200, 0, 0))
+        #     painter.drawEllipse(rect)
+        ### Ends Alkemy-X Override ###
 
         if not index.data(ACTION_IS_GROUP_ROLE):
             return

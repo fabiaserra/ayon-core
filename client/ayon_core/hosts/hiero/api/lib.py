@@ -697,7 +697,7 @@ def launch_workfiles_app(event):
 
 ### Starts Alkemy-x Override ###
 def set_favorites():
-    from ayon_core.hosts.nuke.api.utils import set_context_favorites
+    from ayon_nuke.api.utils import set_context_favorites
 
     work_dir = os.getenv("AYON_WORKDIR")
     asset = get_current_folder_path()
@@ -850,7 +850,7 @@ class PublishAction(QtWidgets.QAction):
 #
 #     '''
 #     import hiero.core
-#     from ayon_core.hosts.nuke.api.lib import (
+#     from ayon_nuke.nuke.api.lib import (
 #         BuildWorkfile,
 #         imprint
 #     )

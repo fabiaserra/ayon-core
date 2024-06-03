@@ -6,7 +6,7 @@ import re
 import nuke
 import pyblish.api
 
-from ayon_core.hosts.nuke import api as napi
+from ayon_nuke import api as napi
 from ayon_core.pipeline import publish, PublishXmlValidationError
 from ayon_core.lib import path_tools, get_ffprobe_streams, convert_ffprobe_fps_value
 
