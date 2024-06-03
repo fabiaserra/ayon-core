@@ -44,6 +44,5 @@ class CollectDefaultDeadlineServer(pyblish.api.ContextPlugin):
             deadline_url = default_dl_server_info["value"]
 
         context.data["deadline"] = {}
-        deadline_url = deadline_url.strip().rstrip("/")
-        context.data["deadline"]["defaultUrl"] = deadline_url
-        self.log.info("Collected default url %s", deadline_url)
+        context.data["deadline"]["defaultUrl"] = (
+            deadline_url.strip().rstrip("/"))
