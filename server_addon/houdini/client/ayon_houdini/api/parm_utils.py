@@ -50,16 +50,22 @@ def add_parm_template_to_node(parm_data, node):
     if folder_templates:
         last_folder_name = folder_templates[-1].name()
 
-    # If there's a last folder, insert after that one
-    # NOTE: We do this in case there's other spare parms in between
-    # the last folder and the folder we are inserting so
-    # the folder tab doesn't get appended at the end and not very visible
-    if last_folder_name:
-        ptg.insertAfter(last_folder_name, parm)
-    # Otherwise simply append to the template group
-    else:
-        ptg.append(parm)
+    # If we couldn't find a folder parm, we put all the existing parms
+    # within a new folder tab so it's easier to visualize the Publish tab
+    if not last_folder_name:
+        last_folder_name = "orig_parms"
+        new_folder = hou.FolderParmTemplate(last_folder_name, "Main")
+        # Iterate through existing parameter templates and add them to the new folder
+        for parm_template in ptg.parmTemplates():
+            new_folder.addParmTemplate(parm_template)
+        # Clear the current parameter templates from the node's parm template group
+        ptg.clear()
+        # Add the new folder to the parm template group
+        ptg.append(new_folder)
 
+    ptg.insertAfter(last_folder_name, parm)
+    
+    # Set the updated parm template group back to the node
     node.setParmTemplateGroup(ptg)
 
 
