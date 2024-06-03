@@ -43,6 +43,7 @@ def get_folder_fps(folder_entity=None):
         folder_entity = get_current_folder_entity(fields=["attrib.fps"])
     return folder_entity["attrib"]["fps"]
 
+
 def get_export_parameter(node):
     """Return the export output parameter of the given node
 

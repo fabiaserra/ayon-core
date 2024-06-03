@@ -318,9 +318,8 @@ def publish(parent):
     for track_item in selected_track_items:
         if track_item in ignored_op_clips:
             continue
-        ### TODO: needs refactor to ayon-core ###
         tag = lib.create_ayon_instance(track_item)
-        if not tag is True:
+        if tag is not True:
             missing_tags.append(f"{track_item.parent().name()}.{track_item.name()} - {tag}")
 
     if missing_tags:

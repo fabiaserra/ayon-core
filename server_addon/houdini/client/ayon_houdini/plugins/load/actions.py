@@ -8,6 +8,7 @@ from ayon_core.lib import get_ffprobe_streams
 from ayon_core.pipeline import get_representation_path
 from ayon_core.hosts.houdini.plugins.load import load_image
 
+
 class SetFrameRangeLoader(plugin.HoudiniLoader):
     """Set frame range excluding pre- and post-handles"""
 
@@ -86,7 +87,7 @@ class SetFrameRangeWithHandlesLoader(plugin.HoudiniLoader):
         hou.playbar.setPlaybackRange(start, end)
 
 
-class LoadCameraPlateLoader(load.LoaderPlugin):
+class LoadCameraPlateLoader(plugin.LoaderPlugin):
     """Load plate into selected cameras"""
 
     families = [

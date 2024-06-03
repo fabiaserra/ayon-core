@@ -95,6 +95,45 @@ class CollectSettingsSimpleInstances(pyblish.api.InstancePlugin):
             )
         )
 
+        # Add targeted family to families
+        family = instance.data["family"]
+        creator_attributes = instance.data["creator_attributes"]
+        render_target = creator_attributes["render_target"]
+        instance.data["families"].append(
+            "{}.{}".format(family, render_target)
+        )
+
+        # Add render target specific data
+        if render_target == "farm":
+            # Farm rendering
+            instance.data["toBeRenderedOn"] = "deadline"
+            instance.data["transfer"] = False
+            instance.data["farm"] = True # to skip integrate
+
+            if "expectedFiles" not in instance.data:
+                instance.data["expectedFiles"] = list()
+                instance.data["files"] = list()
+                for source_file in source_filepaths:
+                    # expected_file = os.path.basename(source_file)
+                    instance.data["files"].append(source_file)
+                    instance.data["expectedFiles"].append(source_file)
+
+            context = instance.context
+            output_dir = os.path.dirname(source_filepaths[0])
+            instance.data["outputDir"] = output_dir
+            self.log.info("instance.data: %s", instance.data)
+            context.data["currentFile"] = "{}_{}_{}".format(
+                os.environ.get("AYON_PROJECT_NAME"),
+                instance.data["folderPath"],
+                instance.data["task"],
+            )
+            self.log.info("Farm rendering ON ...")
+        else:
+            # Add local_publish custom tag so we can use for output filtering
+            for representation in instance.data["representations"]:
+                representation["custom_tags"] = ["local_publish"]
+
+
     def _fill_version(self, instance, instance_label):
         """Fill instance version under which will be instance integrated.
 

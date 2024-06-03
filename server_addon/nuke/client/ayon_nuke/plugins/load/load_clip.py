@@ -42,6 +42,7 @@ class LoadClip(plugin.NukeLoader):
         "render",
         "prerender",
         "review",
+        "reference",
     }
     representations = {"*"}
     extensions = set(

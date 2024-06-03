@@ -8,8 +8,6 @@ import hiero
 from qtpy import QtWidgets, QtCore
 import qargparse
 
-import ayon_api
-
 from ayon_core.settings import get_current_project_settings
 from ayon_core.lib import Logger
 from ayon_core.pipeline import LoaderPlugin, LegacyCreator, get_current_project_name

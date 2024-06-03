@@ -101,7 +101,7 @@ host_tools.show_publisher(parent, tab="publish")
                 <label>Create Flipbook...</label>
                 <scriptCode><![CDATA[
 import hou
-from ayon_core.hosts.houdini.api import flipbook
+from ayon_houdini.api import flipbook
 parent = hou.qt.mainWindow()
 flipbook.show_dialog(parent)
 ]]></scriptCode>
