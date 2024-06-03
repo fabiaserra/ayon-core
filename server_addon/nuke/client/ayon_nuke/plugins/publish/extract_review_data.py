@@ -26,11 +26,15 @@ class ExtractReviewData(publish.Extractor):
 
         # review can be removed since `ProcessSubmittedJobOnFarm` will create
         # reviewable representation if needed
-        if (
-            instance.data.get("farm")
-            and "review" in instance.data["families"]
-        ):
-            instance.data["families"].remove("review")
+        ### Starts Alkemy-X Override ###
+        # Avoid removing 'review' family when publishing in the farm as we now
+        # always submit a Deadline task to generate review using ExtractReviewNuke plugin
+        # if (
+        #     instance.data.get("farm")
+        #     and "review" in instance.data["families"]
+        # ):
+        #     instance.data["families"].remove("review")
+        ### Ends Alkemy-X Override ###
 
         # iterate representations and add `review` tag
         for repre in representations:

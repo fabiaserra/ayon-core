@@ -1,9 +1,13 @@
 import os
+import clique
+import glob
+
 import nuke
 import pyblish.api
-from ayon_nuke import api as napi
-from ayon_core.pipeline import publish
 
+from ayon_nuke import api as napi
+from ayon_core.pipeline import publish, PublishXmlValidationError
+from ayon_core.lib import path_tools, get_ffprobe_streams, convert_ffprobe_fps_value
 
 class CollectNukeWrites(pyblish.api.InstancePlugin,
                         publish.ColormanagedPyblishPluginMixin):
@@ -98,6 +102,18 @@ class CollectNukeWrites(pyblish.api.InstancePlugin,
             for source_file in collected_frames
         ]
 
+    ### Starts Alkemy-X Override ###
+    def _set_frame_range_data(self, instance, first_frame, last_frame):
+        """Sets frame range data to the class instance. Later during calls
+        to get frame range data if instance has frame range it will use the
+        stored data instead. This method allows the explicit setting of frame
+        range data that may already exist.
+        """
+        instance_name = instance.data["name"]
+
+        self._frame_ranges[instance_name] = (first_frame, last_frame)
+    ### Ends Alkemy-X Override ###
+
     def _get_frame_range_data(self, instance):
         """Get frame range data from instance.
 
@@ -159,8 +175,10 @@ class CollectNukeWrites(pyblish.api.InstancePlugin,
         color_channels = write_node["channels"].value()
 
         # get frame range data
-        handle_start = instance.context.data["handleStart"]
-        handle_end = instance.context.data["handleEnd"]
+        ### Starts Alkemy-X Override ###
+        # handle_start = instance.context.data["handleStart"]
+        # handle_end = instance.context.data["handleEnd"]
+        ### Ends Alkemy-X Override ###
         first_frame, last_frame = self._get_frame_range_data(instance)
 
         # get output paths
@@ -181,24 +199,17 @@ class CollectNukeWrites(pyblish.api.InstancePlugin,
             "color_channels": color_channels
         })
 
-        if product_type == "render":
-            instance.data.update({
-                "handleStart": handle_start,
-                "handleEnd": handle_end,
-                "frameStart": first_frame + handle_start,
-                "frameEnd": last_frame - handle_end,
-                "frameStartHandle": first_frame,
-                "frameEndHandle": last_frame,
-            })
-        else:
-            instance.data.update({
-                "handleStart": 0,
-                "handleEnd": 0,
-                "frameStart": first_frame,
-                "frameEnd": last_frame,
-                "frameStartHandle": first_frame,
-                "frameEndHandle": last_frame,
-            })
+        ### Starts Alkemy-X Override ###
+        instance.data.update({
+            "handleStart": 0,
+            "handleEnd": 0,
+            "frameStart": first_frame,
+            "frameEnd": last_frame,
+            "frameStartHandle": first_frame,
+            "frameEndHandle": last_frame,
+        })
+        ### Ends Alkemy-X Override ###
+
 
         # TODO temporarily set stagingDir as persistent for backward
         # compatibility. This is mainly focused on `renders`folders which
@@ -229,10 +240,13 @@ class CollectNukeWrites(pyblish.api.InstancePlugin,
         # set child nodes to instance transient data
         instance.data["transientData"]["childNodes"] = child_nodes
 
-        write_node = None
-        for node_ in child_nodes:
-            if node_.Class() == "Write":
-                write_node = node_
+        if child_nodes:
+            write_node = None
+            for node_ in child_nodes:
+                if node_.Class() == "Write":
+                    write_node = node_
+        else:
+            write_node = instance.data["transientData"]["node"]
 
         if write_node:
             # for slate frame extraction
@@ -271,8 +285,12 @@ class CollectNukeWrites(pyblish.api.InstancePlugin,
             "name": ext,
             "ext": ext,
             "stagingDir": output_dir,
-            "tags": []
+            "tags": ["shotgridreview", "review"]
         }
+
+        frame_start_str = self._get_frame_start_str(first_frame, last_frame)
+
+        representation['frameStart'] = frame_start_str
 
         # set slate frame
         collected_frames = self._add_slate_frame_to_collected_frames(
@@ -283,7 +301,9 @@ class CollectNukeWrites(pyblish.api.InstancePlugin,
         )
 
         if len(collected_frames) == 1:
-            representation['files'] = collected_frames.pop()
+            ### Starts Alkemy-X Override ###
+            representation['files'] = collected_frames[0]
+            ### Ends Alkemy-X Override ###
         else:
             representation['files'] = collected_frames
 
@@ -375,28 +395,105 @@ class CollectNukeWrites(pyblish.api.InstancePlugin,
 
         write_node = self._write_node_helper(instance)
 
+        ### Starts Alkemy-X Override ###
         write_file_path = nuke.filename(write_node)
-        output_dir = os.path.dirname(write_file_path)
 
-        # get file path knob
-        node_file_knob = write_node["file"]
-        # list file paths based on input frames
-        expected_paths = list(sorted({
-            node_file_knob.evaluate(frame)
-            for frame in range(first_frame, last_frame + 1)
-        }))
+        # Extension may not match write node file type
+        extension = os.path.splitext(write_file_path)[-1]
+        output_path_pattern = path_tools.replace_frame_number_with_token(write_file_path, "*")
+        output_files = glob.glob(output_path_pattern)
+        if not output_files:
+            raise PublishXmlValidationError(
+                self,
+                f"No frames found on disk to publish matching write node output path: {output_path_pattern}" ,
+                formatting_data={
+                    "output_path": write_file_path,
+                    "write_node_name": write_node.fullName(),
+                },
+                key="no_render_files"
+            )
 
-        # convert only to base names
-        expected_filenames = {
-            os.path.basename(filepath)
-            for filepath in expected_paths
-        }
+        first_frame = 1
+        last_frame = 1
 
-        # make sure files are existing at folder
-        collected_frames = [
-            filename
-            for filename in os.listdir(output_dir)
-            if filename in expected_filenames
-        ]
+        collections, remainders = clique.assemble(output_files)
+        if collections:
+            collected_frame_paths = list(collections[0])
+            collection_indexes = list(collections[0].indexes)
+            first_frame = collection_indexes[0]
+            last_frame = collection_indexes[-1]
+        elif remainders:
+            collected_frame_paths = [remainders[0]]
+            if f".{extension}" in napi.constants.VIDEO_FILE_EXTENSIONS:
+                duration = self._get_number_of_frames(collected_frame_paths[0])
+                first_frame = 1
+                last_frame = duration
+            else:
+                match = path_tools.RE_FRAME_NUMBER.match(
+                    os.path.basename(remainders[0])
+                )
+                if match:
+                    try:
+                        frame = int(match.group("frame"))
+                        first_frame = frame
+                        last_frame = frame
+                    except ValueError:
+                        pass
 
+        # Update frame instance frame range with collected frame range
+        self._set_frame_range_data(instance, first_frame, last_frame)
+
+        collected_frames = [os.path.basename(frame) for frame in collected_frame_paths]
+        self.log.info("Collected frames: %s", collected_frames)
+        ### Ends Alkemy-X Override ###
         return collected_frames
+
+    ### Starts Alkemy-X Override ###
+    def _get_number_of_frames(self, file_url):
+        """Return duration in frames"""
+        try:
+            streams = get_ffprobe_streams(file_url, self.log)
+        except Exception as exc:
+            raise AssertionError(
+                (
+                    'FFprobe couldn\'t read information about input file: "{}".'
+                    " Error message: {}"
+                ).format(file_url, str(exc))
+            )
+
+        first_video_stream = None
+        for stream in streams:
+            if "width" in stream and "height" in stream:
+                first_video_stream = stream
+                break
+
+        if first_video_stream:
+            nb_frames = stream.get("nb_frames")
+            if nb_frames:
+                try:
+                    return int(nb_frames)
+                except ValueError:
+                    self.log.warning(
+                        "nb_frames {} not convertible".format(nb_frames)
+                    )
+
+                    duration = stream.get("duration")
+                    frame_rate = convert_ffprobe_fps_value(
+                        stream.get("r_frame_rate", "0/0")
+                    )
+                    self.log.debug(
+                        "duration:: {} frame_rate:: {}".format(
+                            duration, frame_rate
+                        )
+                    )
+                    try:
+                        return float(duration) * float(frame_rate)
+                    except ValueError:
+                        self.log.warning(
+                            "{} or {} cannot be converted".format(
+                                duration, frame_rate
+                            )
+                        )
+
+        self.log.warning("Cannot get number of frames")
+        ### Ends Alkemy-X Override ###
