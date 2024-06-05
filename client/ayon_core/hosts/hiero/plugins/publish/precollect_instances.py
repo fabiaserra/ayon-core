@@ -145,7 +145,7 @@ class PrecollectInstances(pyblish.api.ContextPlugin):
             label += " {}".format("[" + ", ".join(families) + "]")
 
             data.update({
-                "name": "{}_{}".format(folder_path, product_name),
+                "name": "{}_{}".format(folder_name, product_name),
                 "label": label,
                 "task": os.getenv("AYON_TASK_NAME"),
                 "productName": product_name,
@@ -256,7 +256,7 @@ class PrecollectInstances(pyblish.api.ContextPlugin):
         label += " {}".format(product_name)
 
         data.update({
-            "name": "{}_{}".format(folder_path, product_name),
+            "name": "{}_{}".format(folder_name, product_name),
             "label": label,
             "productName": product_name,
             "productType": product_type,

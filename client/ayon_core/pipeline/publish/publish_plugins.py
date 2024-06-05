@@ -149,11 +149,14 @@ class AYONPyblishPluginMixin:
         if not inspect.isclass(plugin):
             plugin = plugin.__class__
 
-        return (
-            data
-            .get("publish_attributes", {})
-            .get(plugin.__name__, {})
-        )
+        ### Starts Alkemy-X Override ###
+        # Workaround for the case where publish_attributes exists but it's `None`
+        publish_attributes = data.get("publish_attributes", {})
+        if not publish_attributes:
+            return {}
+        
+        return publish_attributes.get(plugin.__name__, {})
+        ### Ends Alkemy-X Override ###
 
     def get_attr_values_from_data(self, data):
         """Get attribute values for attribute definitions from data.
