@@ -382,9 +382,9 @@ class ExtractColorFile(pyblish.api.InstancePlugin):
         template_data["ext"] = temp_extension
         anatomy = instance.context.data["anatomy"]
         anatomy_filled = anatomy.format(template_data)
-        publish_dir = anatomy_filled["publish"]["folder"]
-        publish_file = anatomy_filled["publish"]["file"]
-        version = anatomy_filled["publish"]["version"]
+        publish_dir = anatomy_filled["publish"]["default"]["folder"]
+        publish_file = anatomy_filled["publish"]["default"]["file"]
+        version = anatomy_filled["publish"]["default"]["version"]
         shot_root = publish_dir.split("/publish/")[0]
         plate_name = publish_file.replace(
             "_{0}.{1}".format(version, temp_extension), ""

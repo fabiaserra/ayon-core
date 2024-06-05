@@ -24,28 +24,34 @@ class CollectDeadlineUserCredentials(pyblish.api.InstancePlugin):
     label = "Collect Deadline User Credentials"
 
     targets = ["local"]
-    hosts = ["aftereffects",
-             "blender",
-             "fusion",
-             "harmony",
-             "nuke",
-             "maya",
-             "max",
-             "houdini"]
+    hosts = [
+        "aftereffects",
+        "blender",
+        "fusion",
+        "harmony",
+        "nuke",
+        "maya",
+        "max",
+        "houdini",
+        "hiero"
+    ]
 
-    families = ["render",
-                "rendering",
-                "render.farm",
-                "renderFarm",
-                "renderlayer",
-                "maxrender",
-                "usdrender",
-                "redshift_rop",
-                "arnold_rop",
-                "mantra_rop",
-                "karma_rop",
-                "vray_rop",
-                "publish.hou"]
+    families = [
+        "render",
+        "rendering",
+        "render.farm",
+        "renderFarm",
+        "renderlayer",
+        "maxrender",
+        "usdrender",
+        "redshift_rop",
+        "arnold_rop",
+        "mantra_rop",
+        "karma_rop",
+        "vray_rop",
+        "publish.hou",
+        "plate.farm"
+    ]
 
     def process(self, instance):
         if not instance.data.get("farm"):
