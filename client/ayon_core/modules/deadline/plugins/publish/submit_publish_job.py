@@ -163,6 +163,7 @@ class ProcessSubmittedJobOnFarm(pyblish.api.InstancePlugin,
         "AYON_APP_NAME",
         "AYON_USERNAME",
         "AYON_SG_USERNAME",
+        "USER",
         "KITSU_LOGIN",
         "KITSU_PWD"
     ]
