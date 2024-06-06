@@ -119,6 +119,11 @@ class TrayManager:
 
         self._add_version_item()
 
+        # Add Restart action to menu
+        restart_action = QtWidgets.QAction("Restart", self.tray_widget)
+        restart_action.triggered.connect(self.restart)
+        self.tray_widget.menu.addAction(restart_action)
+
         # Add Exit action to menu
         exit_action = QtWidgets.QAction("Exit", self.tray_widget)
         exit_action.triggered.connect(self.tray_widget.exit)
