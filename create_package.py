@@ -32,6 +32,25 @@ import hashlib
 
 from typing import Optional
 
+### Starts Alkemy-X Override ###
+# Add a way to upload package directly to server
+try:
+    import ayon_api
+    from ayon_api import get_server_api_connection
+
+    has_ayon_api = True
+except ModuleNotFoundError:
+    has_ayon_api = False
+
+try:
+    from dotenv import load_dotenv
+
+    load_dotenv()
+except ModuleNotFoundError:
+    if has_ayon_api:
+        logging.warning("dotenv not installed, skipping loading .env file")
+### Ends Alkemy-X Override ###
+
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 PACKAGE_PATH = os.path.join(CURRENT_DIR, "package.py")
 package_content = {}
@@ -359,6 +378,14 @@ if __name__ == "__main__":
             " (Will be purged if already exists!)"
         )
     )
+    ### Starts Alkemy-X Override ###
+    parser.add_argument(
+        "--upload",
+        dest="upload",
+        action="store_true",
+        help="Upload the build to your ayon server and reload",
+    )
+    ### Ends Alkemy-X Override ###
 
     args = parser.parse_args(sys.argv[1:])
     main(
@@ -367,3 +394,28 @@ if __name__ == "__main__":
         args.keep_sources,
         args.clear_output_dir
     )
+    ### Starts Alkemy-X Override ###
+    if args.upload and not args.skip_zip:
+        if not has_ayon_api:
+            raise RuntimeError(
+                "Ayon API is not available. Please install it"
+                " to use the upload feature."
+            )
+        output_dir = args.output_dir
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        if not output_dir:
+            output_dir = os.path.join(current_dir, "package")
+        output_path = os.path.join(
+            output_dir, f"{ADDON_NAME}-{ADDON_VERSION}.zip"
+        )
+
+        ayon_api.init_service()
+        log: logging.Logger = logging.getLogger("upload_package")
+        log.info("Trying to upload zip")
+        response = ayon_api.upload_addon_zip(output_path)
+        server = get_server_api_connection()
+        if server:
+            server.trigger_server_restart()
+        else:
+            log.warning("Could not restart server")
+    ### Ends Alkemy-X Override ###
