@@ -33,6 +33,8 @@ import collections
 import pyblish.api
 import ayon_api
 
+from ayon_core.lib import prepare_template_data
+from ayon_core.pipeline import context_tools
 from ayon_core.pipeline.template_data import get_folder_template_data
 from ayon_core.pipeline.version_start import get_versioning_start
 
@@ -382,37 +384,64 @@ class CollectAnatomyInstanceData(pyblish.api.ContextPlugin):
         # QUESTION should we make sure that all folder data are poped if
         #   folder data cannot be found?
         # - 'folder', 'hierarchy', 'parent', 'folder'
+        ### Starts Alkemy-X Override ###
+        # Collect folder entity regardless sow e can use `get_hierarchy_env`
+        # to fill up hierarchy instance data
         folder_entity = instance.data.get("folderEntity")
-        if folder_entity:
-            folder_data = get_folder_template_data(
-                folder_entity,
-                project_entity["name"]
+        if not folder_entity:
+            folder_entity = ayon_api.get_folder_by_path(
+                project_entity["name"],
+                instance.data["folderPath"]
             )
-            anatomy_data.update(folder_data)
+            instance.data["folderEntity"] = folder_entity
+
+        if not folder_entity:
             return
 
-        if instance.data.get("newAssetPublishing"):
-            hierarchy = instance.data["hierarchy"]
-            anatomy_data["hierarchy"] = hierarchy
+        folder_data = get_folder_template_data(
+            folder_entity,
+            project_entity["name"]
+        )
+        anatomy_data.update(folder_data)
+        
+        # Set hierarchy context data to anatomy so we can use it on templates
+        hierarchy_env = context_tools.get_hierarchy_env(
+            project_entity, folder_entity
+        )
+        hierarchy_pairs = {}
+        # Only add to hierarchy_pairs if the env does exist
+        for env_key in {"EPISODE", "SEQ", "SHOT", "SHOTNUM", "ASSET_TYPE"}:
+            env_value = hierarchy_env.get(env_key)
+            if not env_value:
+                continue
+            hierarchy_pairs[env_key.lower()] = env_value
+        hierarchy_data = prepare_template_data(hierarchy_pairs)
+        anatomy_data.update(hierarchy_data)
+        return 
 
-            parent_name = project_entity["name"]
-            if hierarchy:
-                parent_name = hierarchy.split("/")[-1]
+        # if instance.data.get("newAssetPublishing"):
+        #     hierarchy = instance.data["hierarchy"]
+        #     anatomy_data["hierarchy"] = hierarchy
 
-            folder_name = instance.data["folderPath"].split("/")[-1]
-            anatomy_data.update({
-                "asset": folder_name,
-                "hierarchy": hierarchy,
-                "parent": parent_name,
-                "folder": {
-                    "name": folder_name,
-                    "path": instance.data["folderPath"],
-                    # TODO get folder type from hierarchy
-                    #   Using 'Shot' is current default behavior of editorial
-                    #   (or 'newAssetPublishing') publishing.
-                    "type": "Shot",
-                },
-            })
+        #     parent_name = project_entity["name"]
+        #     if hierarchy:
+        #         parent_name = hierarchy.split("/")[-1]
+
+        #     folder_name = instance.data["folderPath"].split("/")[-1]
+        #     anatomy_data.update({
+        #         "asset": folder_name,
+        #         "hierarchy": hierarchy,
+        #         "parent": parent_name,
+        #         "folder": {
+        #             "name": folder_name,
+        #             "path": instance.data["folderPath"],
+        #             # TODO get folder type from hierarchy
+        #             #   Using 'Shot' is current default behavior of editorial
+        #             #   (or 'newAssetPublishing') publishing.
+        #             "type": "Shot",
+        #         },
+        #     })
+        ### Ends Alkemy-X Override ###
 
     def _fill_task_data(self, instance, task_types_by_name, anatomy_data):
         # QUESTION should we make sure that all task data are poped if task
