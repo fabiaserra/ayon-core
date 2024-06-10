@@ -183,6 +183,13 @@ class SidePanelWidget(QtWidgets.QWidget):
             "<br/>".join(modified_lines),
         )
 
+        username = self._get_user_name(filepath)
+        if username:
+            lines += (
+                "<b>User:</b>",
+                username,
+            )
+
         dcc_version = self._get_dcc_version(filepath)
         if dcc_version:
             lines += (
@@ -197,6 +204,21 @@ class SidePanelWidget(QtWidgets.QWidget):
         self._details_input.setPlainText("")
         self._details_input.appendHtml("<br>".join(lines))
 
+    ### Starts Alkemy-X Override ###
+    # Add extra useful info to side panel
+    def _get_user_name(self, file):
+        """Get user name from file path"""
+        # Only run on Unix because pwd module is not available on Windows.
+        # NOTE: we tried adding "win32security" module but it was not working
+        # on all hosts so we decided to just support Linux until migration
+        # to Ayon
+        if platform.system().lower() == "windows":
+            return None
+        import pwd
+
+        filestat = os.stat(file)
+        return pwd.getpwuid(filestat.st_uid).pw_name
+    
     def _get_nuke_version_from_file(self, filepath):
         with open(filepath, "r") as file:
             file_content = file.readlines()
@@ -235,3 +257,4 @@ class SidePanelWidget(QtWidgets.QWidget):
             return f"Nuke {self._get_nuke_version_from_file(filepath)}"
         elif filepath.endswith(".hip"):
             return f"Houdini {self._get_houdini_version_from_file(filepath)}"
+    ### Ends Alkemy-X Override ###
