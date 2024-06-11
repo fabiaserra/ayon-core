@@ -201,7 +201,7 @@ class FlipbookDialog(QtWidgets.QDialog):
             x = cam.parm("resx").eval()
             y = float(cam.parm("resy").eval())
             pixel_ratio = cam.parm("aspect").eval()
-            return (x, int(y / pixel_ratio))
+            return (str(x), str(int(y / pixel_ratio)))
 
         return ("$RESX", "$RESY")
 
