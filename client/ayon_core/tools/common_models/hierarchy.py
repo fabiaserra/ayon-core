@@ -279,32 +279,47 @@ class HierarchyModel(object):
             self._refresh_folders_cache(project_name, sender)
         return self._folders_items[project_name].get_data()
 
-    def get_assigned_folder_items(self, project_name, sender, assignee=None):
-        """Get folder items assigned to user by project name.
+    def get_assigned_folder_paths(
+        self, project_name, sender=None, assignee=None
+    ):
+        """Get folder paths assigned to user by project name.
 
-        The folders are cached per project name. If the cache is not valid
-        then the folders are queried from server.
+        If a child folder is assigned (i.e. /season/seq/sh010) this
+        function will also return all the parent entities on the
+        hierarchy (i.e. ["/season", "/season/seq"]) as those are
+        implicitly assigned to the user as well.
 
         Args:
             project_name (str): Name of project where to look for folders.
             sender (Union[str, None]): Who requested the folder ids.
+            assignee (Union[str, None]): User we want to check folders
+                assigned to.
 
         Returns:
-            dict[str, FolderItem]: Folder items by id.
+            set[str]: Folder paths assigned to user.
         """
         if not assignee:
             assignee = ayon_api.get_user()["name"]
 
+        assigned_folder_paths = set()
+
         tasks = ayon_api.get_tasks(project_name, assignees=[assignee])
         if not tasks:
-            return None
+            return assigned_folder_paths
         
         folder_items = self.get_folder_items(project_name, sender)
-        assigned_folder_items = []
-        for task in tasks:
-            assigned_folder_items.append(folder_items[task["folderId"]])
+        if not folder_items:
+            return assigned_folder_paths
 
-        return assigned_folder_items
+        for task in tasks:
+            folder_id = task["folderId"]
+            folder_path = folder_items[folder_id].path
+            # Add all parent hierarchy as individual entries
+            while "/" in folder_path:
+                assigned_folder_paths.add(folder_path)
+                folder_path, _ = folder_path.rsplit("/", 1)
+
+        return assigned_folder_paths
     
     def get_folder_items_by_id(self, project_name, folder_ids):
         """Get folder items by ids.
