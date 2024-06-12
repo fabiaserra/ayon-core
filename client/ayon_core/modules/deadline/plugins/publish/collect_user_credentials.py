@@ -15,6 +15,7 @@ import pyblish.api
 from ayon_api import get_server_api_connection
 from ayon_core.modules.deadline.deadline_module import DeadlineModule
 from ayon_core.modules.deadline import __version__
+from ayon_core.modules.deadline import constants as dl_constants
 
 
 class CollectDeadlineUserCredentials(pyblish.api.InstancePlugin):
@@ -36,22 +37,7 @@ class CollectDeadlineUserCredentials(pyblish.api.InstancePlugin):
         "hiero"
     ]
 
-    families = [
-        "render",
-        "rendering",
-        "render.farm",
-        "renderFarm",
-        "renderlayer",
-        "maxrender",
-        "usdrender",
-        "redshift_rop",
-        "arnold_rop",
-        "mantra_rop",
-        "karma_rop",
-        "vray_rop",
-        "publish.hou",
-        "plate.farm"
-    ]
+    families = dl_constants.FARM_FAMILIES
 
     def process(self, instance):
         if not instance.data.get("farm"):
