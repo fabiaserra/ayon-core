@@ -171,6 +171,7 @@ def validate_version(
         "outputDir": os.path.dirname(source_path),
         "convertToScanline": publish_data.get("convertToScanline", False),
         "stagingDir_persistent": True,
+        "deadline": {"url": dl_constants.DEADLINE_URL, "auth": False},
     }
 
     if product_group:
