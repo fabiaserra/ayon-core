@@ -40,6 +40,11 @@ def send_email(
     Requires at least one recipient, a subject and message. Can also be used
     to attach files, add CC, BCC and reply_to tags.
     """
+    if not smtp_server:
+        logger.error("No SMTP server passed, unable to send email.")
+        return
+    
+    logger.info("Using SMTP Server: '%s'", smtp_server)
 
     # Convert recipients to proper list
     if isinstance(recipients, str):
