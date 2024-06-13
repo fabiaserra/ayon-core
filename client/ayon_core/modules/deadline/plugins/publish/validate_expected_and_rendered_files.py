@@ -131,7 +131,14 @@ class ValidateExpectedFiles(pyblish.api.InstancePlugin):
 
         for job_id in dependent_job_ids:
             job_info = self._get_job_info(instance, job_id)
-            frame_list = job_info["Props"].get("Frames")
+            ### Starts Alkemy-X Override ###
+            # Check if it's not one of our custom DL tasks that we generate
+            # Nuke reviews and the frame list from the DL task might not match
+            # the amount of frames actually being rendered
+            frame_list = job_info["Props"].get("Env", {}).get("_AX_REVIEW_FRAMES")
+            if not frame_list:
+                frame_list = job_info["Props"].get("Frames")
+            ### Ends Alkemy-X Override ###
             if frame_list:
                 all_frame_lists.extend(frame_list.split(','))
 

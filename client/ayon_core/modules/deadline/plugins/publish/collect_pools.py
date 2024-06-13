@@ -2,6 +2,7 @@
 import pyblish.api
 from ayon_core.lib import TextDef
 from ayon_core.pipeline.publish import AYONPyblishPluginMixin
+from ayon_core.modules.deadline import constants as dl_constants
 
 
 class CollectDeadlinePools(pyblish.api.InstancePlugin,
@@ -36,22 +37,7 @@ class CollectDeadlinePools(pyblish.api.InstancePlugin,
         "nuke",
     ]
 
-    families = [
-        "render",
-        "prerender",
-        "rendering",
-        "render.farm",
-        "renderFarm",
-        "renderlayer",
-        "maxrender",
-        "usdrender",
-        "redshift_rop",
-        "arnold_rop",
-        "mantra_rop",
-        "karma_rop",
-        "vray_rop",
-        "publish.hou",
-    ]
+    families = dl_constants.FARM_FAMILIES
 
     primary_pool = None
     secondary_pool = None
@@ -86,7 +72,7 @@ class CollectDeadlinePools(pyblish.api.InstancePlugin,
         #       but the Deadline server URL can be dynamic and
         #       can be set per render instance. Since get_attribute_defs
         #       can't be dynamic unfortunately EnumDef isn't possible (yet?)
-        # pool_names = self.deadline_module.get_deadline_pools(deadline_url,
+        # pool_names = self.deadline_addon.get_deadline_pools(deadline_url,
         #                                                      self.log)
         # secondary_pool_names = ["-"] + pool_names
 
