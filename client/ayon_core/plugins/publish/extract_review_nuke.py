@@ -4,6 +4,7 @@ import pyblish.api
 from ayon_core.lib import path_tools
 from ayon_core.pipeline import publish
 from ayon_core.modules.delivery.scripts import review
+from ayon_shotgrid.lib import delivery as sg_delivery
 
 
 class ExtractReviewNuke(publish.Extractor):
@@ -130,12 +131,24 @@ class ExtractReviewNuke(publish.Extractor):
                 "src_colorspace not set, skipping colorspace info."
             )
 
-        # TODO: Hard-code out_colorspace to `shot_lut` for now but we will want to
-        # control when we want it applied or not
+        out_colorspace = "shot_lut"
+        hierarchy_overrides = instance.data.get("shotgridOverrides")
+        if hierarchy_overrides:
+            colorspace_override = None
+            for entity in sg_delivery.SG_SHOT_HIERARCHY_MAP.keys():
+                entity_overrides = hierarchy_overrides.get(entity)
+                if not entity_overrides:
+                    continue
+                colorspace_override = entity_overrides.get("sg_colorspace")
+                if colorspace_override:
+                    out_colorspace = colorspace_override
+                    break
+
         self.log.debug(
-            "out_colorspace set to `shot_lut`"
+            "out_colorspace set to `%s`",
+            out_colorspace
         )
-        review_data["out_colorspace"] = "shot_lut"
+        review_data["out_colorspace"] = out_colorspace
 
         # Submit job to the farm
         response = review.generate_review(
