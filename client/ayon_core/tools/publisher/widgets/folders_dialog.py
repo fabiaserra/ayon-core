@@ -86,6 +86,7 @@ class FoldersDialog(QtWidgets.QDialog):
         )
         ok_btn.clicked.connect(self._on_ok_clicked)
         cancel_btn.clicked.connect(self._on_cancel_clicked)
+
         self._controller = controller
         self._filter_input = filter_input
         self._ok_btn = ok_btn

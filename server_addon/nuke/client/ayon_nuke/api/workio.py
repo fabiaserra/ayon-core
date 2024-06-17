@@ -58,7 +58,7 @@ def open_file(filepath):
         try:
             nuke.scriptReadFile(nuke_script)
         except RuntimeError as e:
-            nuke.tprint("OpenPype Error: There was an error loading script:")
+            nuke.tprint("AYON Error: There was an error loading script:")
             nuke.tprint(str(e))
             pass
         ### Ends Alkemy-X Override ###

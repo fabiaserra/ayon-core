@@ -136,7 +136,6 @@ class PrecollectInstances(pyblish.api.ContextPlugin):
                 data["sg_status"] = "plt"
             elif product_type == "reference":
                 data["sg_status"] = "cqt"
-
             ### Ends Alkemy-X Override ###
 
             # form label
