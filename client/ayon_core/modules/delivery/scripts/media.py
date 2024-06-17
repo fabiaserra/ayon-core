@@ -14,6 +14,7 @@ from ayon_core.modules.deadline import constants as dl_constants
 from ayon_core.modules.deadline.lib import submit
 
 from ayon_shotgrid.lib import credentials
+from ayon_shotgrid.lib import delivery as sg_delivery
 
 
 # Default paths where template nuke script and corresponding python file
@@ -324,6 +325,22 @@ def generate_delivery_media_version(
             )
             return report_items, False
 
+    # Get entity hierarchy overrides to check if there's any override on the
+    # colorspace
+    sg = credentials.get_shotgrid_session()
+
+    hierarchy_overrides = sg_delivery.get_entity_hierarchy_overrides(
+        sg, sg_version["id"], "Version", extra_fields=["sg_colorspace"], stop_when_found=True
+    )
+    colorspace_override = None
+    for entity in sg_delivery.SG_SHOT_HIERARCHY_MAP.keys():
+        entity_overrides = hierarchy_overrides.get(entity)
+        if not entity_overrides:
+            continue
+        colorspace_override = entity_overrides.get("sg_colorspace")
+        if colorspace_override:
+            break
+        
     # Grab frame range from version being delivered
     frame_start_handle = int(
         version_doc["data"]["frameStart"] - version_doc["data"].get("handleStart", 0)
@@ -390,6 +407,7 @@ def generate_delivery_media_version(
             anatomy_data.get("submit_for"),
         "_AX_DELIVERY_ARTIST": sg_version.get("user", {}).get("name") or
             anatomy_data.get("user"),
+        "_AX_DELIVERY_COLORSPACE": colorspace_override,
         "_AX_DEBUG_PATH": os.path.join(package_path, "nuke_scripts"),
         "AYON_PROJECT_NAME": project_name,
         "AYON_FOLDER_PATH": anatomy_data["folderPath"],
@@ -532,7 +550,6 @@ def generate_delivery_media_version(
             SG_FIELD_MEDIA_GENERATED: True,
             SG_FIELD_MEDIA_PATH: os.path.join(package_path, package_name),
         }
-        sg = credentials.get_shotgrid_session()
         sg.update("Version", sg_version["id"], data_to_update)
         logger.debug(
             "Updating version '%s' with '%s'", sg_version["code"], data_to_update
