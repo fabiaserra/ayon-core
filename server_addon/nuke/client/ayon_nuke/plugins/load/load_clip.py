@@ -130,11 +130,11 @@ class LoadClip(plugin.NukeLoader):
         self.log.debug(
             "Representation id `{}` ".format(repre_id))
 
-        self.handle_start = version_attributes.get("handleStart", 0)
-        self.handle_end = version_attributes.get("handleEnd", 0)
+        self.handle_start = version_attributes.get("handleStart", 0) or 0
+        self.handle_end = version_attributes.get("handleEnd", 0) or 0
 
-        first = version_attributes.get("frameStart")
-        last = version_attributes.get("frameEnd")
+        first = version_attributes.get("frameStart", 1) or 1
+        last = version_attributes.get("frameEnd", 1) or 1
         first -= self.handle_start
         last += self.handle_end
 
