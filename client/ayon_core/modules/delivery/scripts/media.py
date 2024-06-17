@@ -7,14 +7,13 @@ import re
 import csv
 
 import ayon_api
+from ayon_deadline import constants as dl_constants
+from ayon_deadline.lib import submit
+from ayon_shotgrid.lib import credentials
+from ayon_shotgrid.lib import delivery as sg_delivery
 
 from ayon_core.lib import Logger, StringTemplate, get_datetime_data, path_tools
 from ayon_core.pipeline import delivery, template_data
-from ayon_core.modules.deadline import constants as dl_constants
-from ayon_core.modules.deadline.lib import submit
-
-from ayon_shotgrid.lib import credentials
-from ayon_shotgrid.lib import delivery as sg_delivery
 
 
 # Default paths where template nuke script and corresponding python file

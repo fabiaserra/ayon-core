@@ -4,8 +4,9 @@ import logging
 from qtpy import QtWidgets, QtGui
 import hou
 
+from ayon_deadline.lib import publish
+
 from ayon_core.lib import path_tools
-from ayon_core.modules.deadline.lib import publish
 
 
 log = logging.getLogger(__name__)

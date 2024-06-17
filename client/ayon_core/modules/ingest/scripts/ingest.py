@@ -4,10 +4,10 @@ import clique
 from collections import defaultdict
 
 import ayon_api
+from ayon_deadline.lib import publish
 
 from ayon_core.lib import Logger
 from ayon_core.lib.transcoding import IMAGE_EXTENSIONS
-from ayon_core.modules.deadline.lib import publish
 from ayon_core.modules.ingest.lib import textures
 
 
