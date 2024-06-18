@@ -1,8 +1,8 @@
 import os
 
 from ayon_core.lib import Logger
-from ayon_core.modules.deadline import constants as dl_constants
-from ayon_core.modules.deadline.lib import submit
+from ayon_deadline import constants as dl_constants
+from ayon_deadline.lib import submit
 
 
 # TODO: Replace these with published Templates workflow

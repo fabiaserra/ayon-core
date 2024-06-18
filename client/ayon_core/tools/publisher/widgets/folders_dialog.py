@@ -26,6 +26,11 @@ class FoldersDialogController:
     def get_folder_items(self, project_name, sender=None):
         return self._controller.get_folder_items(project_name, sender)
 
+    def get_folder_type_items(self, project_name, sender=None):
+        return self._controller.get_folder_type_items(
+            project_name, sender
+        )
+
     def get_assigned_folder_paths(
         self, project_name, sender=None, assignee=None
     ):
@@ -81,6 +86,7 @@ class FoldersDialog(QtWidgets.QDialog):
         )
         ok_btn.clicked.connect(self._on_ok_clicked)
         cancel_btn.clicked.connect(self._on_cancel_clicked)
+
         self._controller = controller
         self._filter_input = filter_input
         self._ok_btn = ok_btn

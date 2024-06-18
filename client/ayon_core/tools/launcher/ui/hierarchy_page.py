@@ -60,7 +60,7 @@ class HierarchyPage(QtWidgets.QWidget):
         folders_wrapper_layout.setContentsMargins(0, 0, 0, 0)
         folders_wrapper_layout.addWidget(folders_filter_text, 0)
         folders_wrapper_layout.addWidget(show_only_my_assignments, 0)
-        folders_wrapper_layout.addWidget(folders_widget, 2)
+        folders_wrapper_layout.addWidget(folders_widget, 1)
 
         # - Tasks widget
         tasks_widget = TasksWidget(controller, content_body)

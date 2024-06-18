@@ -1,0 +1,23 @@
+# describes list of product typed used for plugin filtering for farm publishing
+FARM_FAMILIES = [
+    "arnold_rop",
+    "image",
+    "imagesequence",
+    "karma_rop",
+    "mantra_rop",
+    "maxrender",
+    "plate.farm",
+    "prerender.farm",
+    "prerender.frames_farm",
+    "prerender",
+    "publish.hou",
+    "redshift_rop",
+    "render.farm",
+    "render.frames_farm",
+    "render",
+    "renderFarm",
+    "renderlayer",
+    "usrender",
+    "vray_rop",
+    "vrayscene",
+]
