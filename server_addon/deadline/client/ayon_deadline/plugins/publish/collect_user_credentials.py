@@ -14,7 +14,7 @@ import pyblish.api
 
 from ayon_api import get_server_api_connection
 
-from ayon_deadline.lib import FARM_FAMILIES
+from ayon_deadline.constants import FARM_FAMILIES
 
 
 class CollectDeadlineUserCredentials(pyblish.api.InstancePlugin):
