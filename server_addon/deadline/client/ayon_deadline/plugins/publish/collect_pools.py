@@ -3,7 +3,7 @@ import pyblish.api
 from ayon_core.lib import TextDef
 from ayon_core.pipeline.publish import AYONPyblishPluginMixin
 
-from ayon_deadline.lib import FARM_FAMILIES
+from ayon_deadline.constants import FARM_FAMILIES
 
 
 class CollectDeadlinePools(pyblish.api.InstancePlugin,

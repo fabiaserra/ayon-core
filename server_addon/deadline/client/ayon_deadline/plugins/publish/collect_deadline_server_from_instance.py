@@ -8,7 +8,7 @@ attribute or using default server if that attribute doesn't exists.
 import pyblish.api
 from ayon_core.pipeline.publish import KnownPublishError
 
-from ayon_deadline.lib import FARM_FAMILIES
+from ayon_deadline.constants import FARM_FAMILIES
 
 
 class CollectDeadlineServerFromInstance(pyblish.api.InstancePlugin):

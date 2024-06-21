@@ -1,4 +1,5 @@
 import os
+import re
 import smtplib
 import datetime
 
@@ -55,17 +56,18 @@ def send_email(
         return
 
     approved_emails = []
-    # for person in recipients:
-    #     if re.search(".*@.*\..*", str(person)):
-    #         approved_emails.append(person)
-    #     else:
-    #         logger.warning(f"\n<!> {person} is not a valid email\n")
+    for person in recipients:
+        if re.search(".*@.*\..*", str(person)):
+            approved_emails.append(person)
+        else:
+            logger.warning(f"\n<!> {person} is not a valid email\n")
 
-    # if not approved_emails:
-    #     logger.error("No address was provided, canceling email.")
-    #     return
+    if not approved_emails:
+        logger.error("No address was provided, canceling email.")
+        return
     
-    approved_emails.append("farrizabalaga@alkemy-x.com")
+    # Add pam-history for debugging
+    approved_emails.append("pam-history@alkemy-x.com")
 
     # Create a MIMEText object to represent the email
     if is_html:

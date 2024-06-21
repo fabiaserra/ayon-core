@@ -253,7 +253,7 @@ class ProcessSubmittedJobOnFarm(pyblish.api.InstancePlugin,
         # Transfer the environment from the original job to this dependent
         # job so they use the same environment
         metadata_path, rootless_metadata_path = \
-            create_metadata_path(instance, anatomy, log=self.log)
+            create_metadata_path(instance, anatomy)
         self.log.info("Metadata path: %s", metadata_path)
 
         environment = {
