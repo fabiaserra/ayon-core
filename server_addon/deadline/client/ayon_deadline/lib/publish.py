@@ -7,7 +7,7 @@ import ayon_api
 from ayon_core.lib import Logger, path_tools, run_subprocess
 from ayon_core.pipeline import Anatomy
 from ayon_core.pipeline.template_data import get_template_data
-from ayon_core.modules.delivery.scripts import utils, review
+from ayon_delivery.scripts import utils, review
 from ayon_shotgrid.lib import credentials
 from ayon_shotgrid.scripts import populate_tasks
 
