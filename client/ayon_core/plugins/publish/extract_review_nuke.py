@@ -3,7 +3,7 @@ import pyblish.api
 
 from ayon_core.lib import path_tools
 from ayon_core.pipeline import publish
-from ayon_core.modules.delivery.scripts import review
+from ayon_delivery.scripts import review
 from ayon_shotgrid.lib import delivery as sg_delivery
 
 

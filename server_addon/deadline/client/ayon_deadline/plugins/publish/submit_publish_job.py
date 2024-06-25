@@ -509,6 +509,7 @@ class ProcessSubmittedJobOnFarm(pyblish.api.InstancePlugin,
         '''
 
         ### Starts Alkemy-X Override ###
+        render_jobs = None
         # Make 'jobs' argument a list so we can pass multiple dependency jobs
         # If we have multiple submission jobs, we grab that key instead
         if "deadlineSubmissionJobs" in instance.data:
