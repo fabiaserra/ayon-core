@@ -92,6 +92,12 @@ class WebServerAddon(AYONAddon, ITrayService):
                 )
 
     def tray_init(self):
+        ### Starts Alkemy-X Override ###
+        # Ignore initializing this module as it throws errors and we don't use it
+        # This should really be fixed in ayon-core to not try add this module
+        # since it's not enabled
+        return
+        ### Ends Alkemy-X Override ###
         self.create_server_manager()
         self._add_resources_statics()
         self._add_listeners()
