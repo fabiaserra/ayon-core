@@ -72,26 +72,30 @@ def open_file(filepath):
     # in the contents of the workfile.
     # Nuke Preferences can be read after the script is read.
     read_script(filepath)
+    
+    ### Starts Alkemy-X Override ###
+    # Comment out as we believe we are getting weird things with autosaves
+    # overwriting files so we want to reduce that being possible
+    # if not is_headless():
+    #     autosave = nuke.toNode("preferences")["AutoSaveName"].evaluate()
+    #     autosave_files = getAutoSaveFiles(autosave)
+    #     autosave_prmpt = "Autosave detected.\n" \
+    #                      "Would you like to load the autosave file?"  # noqa
+    #     if autosave_files and os.path.isfile(autosave_files[-1]):
+    #         lastmod_date = time.ctime(os.path.getmtime(filepath))
+    #         autosave_date = time.ctime(os.path.getmtime(autosave))
+    #         if autosave_date > lastmod_date and nuke.ask(autosave_prmpt):
+    #             try:
+    #                 # Overwrite the filepath with autosave
+    #                 # shutil.copy(autosave, filepath)
+    #                 # Now read the (auto-saved) script again
+    #                 read_script(autosave)
+    #             except shutil.Error as err:
+    #                 nuke.message(
+    #                     "Detected autosave file could not be used.\n{}"
 
-    if not is_headless():
-        autosave = nuke.toNode("preferences")["AutoSaveName"].evaluate()
-        autosave_files = getAutoSaveFiles(autosave)
-        autosave_prmpt = "Autosave detected.\n" \
-                         "Would you like to load the autosave file?"  # noqa
-        if autosave_files and os.path.isfile(autosave_files[-1]):
-            lastmod_date = time.ctime(os.path.getmtime(filepath))
-            autosave_date = time.ctime(os.path.getmtime(autosave))
-            if autosave_date > lastmod_date and nuke.ask(autosave_prmpt):
-                try:
-                    # Overwrite the filepath with autosave
-                    # shutil.copy(autosave, filepath)
-                    # Now read the (auto-saved) script again
-                    read_script(autosave)
-                except shutil.Error as err:
-                    nuke.message(
-                        "Detected autosave file could not be used.\n{}"
-
-                        .format(err))
+    #                     .format(err))
+    ### Ends Alkemy-X Override ###
 
     return True
 
