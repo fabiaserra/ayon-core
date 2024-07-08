@@ -18,7 +18,7 @@ from ayon_core.pipeline import (
 from ayon_core.pipeline.colorspace import (
     get_imageio_config
 )
-from ayon_core.modules.ingest.lib import textures
+from ayon_ingest.lib import textures
 
 
 class ExtractConvertTextures(pyblish.api.InstancePlugin):
