@@ -8,6 +8,7 @@ import platform
 import tempfile
 import contextlib
 from collections import OrderedDict
+import uuid
 
 import nuke
 from qtpy import QtCore, QtWidgets
@@ -823,7 +824,14 @@ def check_inventory_versions():
             node = nuke.toNode(container["objectName"])
             avalon_knob_data = read_avalon_data(node)
             repre_id = avalon_knob_data["representation"]
-
+            ### Starts Alkemy-X Override ###
+            # Ignore repre_id's that don't follow the valid id's for AYON
+            # to avoid GraphQl error on get_representations
+            if not isinstance(repre_id, uuid.UUID) or (
+                isinstance(repre_id, str) and len(repre_id) != 32
+            ):
+                continue
+            ### Ends Alkemy-X Override ###
             repre_ids.add(repre_id)
             node_with_repre_id.append((node, repre_id))
 
