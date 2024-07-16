@@ -10,8 +10,8 @@ get-version:
   tags:
     - on-prem
   script:
-    - ADDON_NAME=$(sed -n 's/name = "\([^"]*\)".*/\1/p' package.py)
-    - VERSION=$(sed -n '/^version = /s/^version = "\([^"]*\)".*/\1/p' package.py)
+    - ADDON_NAME=$(sed -n 's/^name = "\([^"]*\)".*/\1/p' package.py)
+    - VERSION=$(sed -n 's/^version = "\([^"]*\)".*/\1/p' package.py)
     - echo "ADDON_NAME=\"${ADDON_NAME}\""
     - echo "ADDON_NAME=\"${ADDON_NAME}\"" > version_info.txt
     - echo "VERSION=\"${VERSION}\""
