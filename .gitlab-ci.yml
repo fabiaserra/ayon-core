@@ -27,7 +27,7 @@ create-package:
   stage: create
   tags:
     - on-prem
-  image: python:3.9-bookworm
+  image: python:3.9-slim
   script:
     - python create_package.py
   artifacts:
@@ -37,7 +37,7 @@ create-package:
 
 upload-addon:
   stage: upload
-  image: python:3.9-bookworm
+  image: python:3.9-slim
   tags:
     - kube
   dependencies:
