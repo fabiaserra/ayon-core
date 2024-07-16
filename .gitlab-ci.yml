@@ -35,7 +35,6 @@ create-package:
   artifacts:
     paths:
       - package
-  when: on_success
 
 upload-addon:
   stage: upload
@@ -48,7 +47,6 @@ upload-addon:
   script:
     - python -m pip install ayon-python-api
     - python deploy_addon.py
-  when: on_success
 
 tag-version:
   stage: release
@@ -62,4 +60,3 @@ tag-version:
   release:
     tag_name: '$VERSION'
     description: 'Release $VERSION using CI pipeline $CI_PIPELINE_ID'
-  when: on_success
