@@ -7,6 +7,7 @@ import collections
 import inspect
 from uuid import uuid4
 from contextlib import contextmanager
+from typing import Optional
 
 import pyblish.logic
 import pyblish.api
@@ -47,7 +48,7 @@ class UnavailableSharedData(Exception):
 
 
 class ImmutableKeyError(TypeError):
-    """Accessed key is immutable so does not allow changes or removements."""
+    """Accessed key is immutable so does not allow changes or removals."""
 
     def __init__(self, key, msg=None):
         self.immutable_key = key
@@ -1433,7 +1434,7 @@ class CreateContext:
         self.convertors_plugins = {}
         self.convertor_items_by_id = {}
 
-        self.publish_discover_result = None
+        self.publish_discover_result: Optional[DiscoverResult] = None
         self.publish_plugins_mismatch_targets = []
         self.publish_plugins = []
         self.plugins_with_defs = []
@@ -2042,7 +2043,8 @@ class CreateContext:
         variant,
         folder_entity=None,
         task_entity=None,
-        pre_create_data=None
+        pre_create_data=None,
+        active=None
     ):
         """Trigger create of plugins with standartized arguments.
 
@@ -2060,6 +2062,8 @@ class CreateContext:
                 of creation (possible context of created instance/s).
             task_entity (Dict[str, Any]): Task entity.
             pre_create_data (Dict[str, Any]): Pre-create attribute values.
+            active (Optional[bool]): Whether the created instance defaults
+                to be active or not.
 
         Returns:
             Any: Output of triggered creator's 'create' method.
@@ -2125,6 +2129,14 @@ class CreateContext:
             "productType": creator.product_type,
             "variant": variant
         }
+        if active is not None:
+            if not isinstance(active, bool):
+                self.log.warning(
+                    "CreateContext.create 'active' argument is not a bool. "
+                    f"Converting {active} {type(active)} to bool.")
+                active = bool(active)
+            instance_data["active"] = active
+
         return creator.create(
             product_name,
             instance_data,
@@ -2604,7 +2616,7 @@ class CreateContext:
     def collection_shared_data(self):
         """Access to shared data that can be used during creator's collection.
 
-        Retruns:
+        Returns:
             Dict[str, Any]: Shared data.
 
         Raises:
