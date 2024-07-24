@@ -60,7 +60,7 @@ tag-version:
     - on-prem
   dependencies:
     - get-version
-  image: registry.gitlab.com/gitlab-org/release-cli:latest
+  image: registry.gitlab.com/gitlab-org/release-cli:v0.18.0
   script:
     - echo "Tagging repository with ${VERSION}"
   release:
