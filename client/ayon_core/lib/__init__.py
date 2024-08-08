@@ -109,6 +109,7 @@ from .transcoding import (
     convert_ffprobe_fps_value,
     convert_ffprobe_fps_to_float,
     get_rescaled_command_arguments,
+    get_media_mime_type,
     get_oiio_info_for_input,
 )
 
@@ -210,6 +211,7 @@ __all__ = [
     "convert_ffprobe_fps_value",
     "convert_ffprobe_fps_to_float",
     "get_rescaled_command_arguments",
+    "get_media_mime_type",
     "get_oiio_info_for_input",
 
     "compile_list_of_regexes",
