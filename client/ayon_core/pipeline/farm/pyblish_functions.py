@@ -397,7 +397,7 @@ def prepare_representations(skeleton_data, exp_files, anatomy, aov_filter,
             # If expectedFile are absolute, we need only filenames
             "stagingDir": staging,
             "fps": skeleton_data.get("fps"),
-            "tags": ["review", "shotgridreview"] if preview else [],
+            "tags": ["review", "shotgridreview", "webreview"] if preview else [],
         }
 
         # poor man exclusion
@@ -447,7 +447,7 @@ def prepare_representations(skeleton_data, exp_files, anatomy, aov_filter,
         preview = preview and not do_not_add_review
 
         ### Starts Alkemy-X Override ###
-        # Only add 'review' and 'shotgridreview' tags for video files
+        # Only add 'review', 'webreview' and 'shotgridreview' tags for video files
         # and single exr frames
         if ext not in {"mp4", "mov", "mxf", "exr"}:
             preview = False
@@ -456,7 +456,7 @@ def prepare_representations(skeleton_data, exp_files, anatomy, aov_filter,
         if preview:
             rep.update({
                 "fps": skeleton_data.get("fps"),
-                "tags": ["review", "shotgridreview"]
+                "tags": ["review", "shotgridreview", "webreview"]
             })
             skeleton_data["families"] = \
                 _add_review_families(skeleton_data["families"])
@@ -700,7 +700,7 @@ def _create_instances_for_aov(instance, skeleton, aov_filter, additional_data,
             # If expectedFile are absolute, we need only filenames
             "stagingDir": staging,
             "fps": new_instance.get("fps"),
-            "tags": ["review", "shotgridreview"] if preview else [],
+            "tags": ["review", "shotgridreview", "webreview"] if preview else [],
             "colorspaceData": {
                 "colorspace": colorspace,
                 "config": {

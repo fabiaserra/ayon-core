@@ -818,6 +818,12 @@ class IntegrateAsset(pyblish.api.InstancePlugin):
         # add colorspace data if any exists on representation
         if repre.get("colorspaceData"):
             data["colorspaceData"] = repre["colorspaceData"]
+        
+        ### Starts Alkemy-X Override ###
+        # Add stagingDir to representation data as it can be useful
+        # for archival
+        data["stagingDir"] = stagingdir
+        # Ends Alkemy-X Override ###
 
         repre_doc = new_representation_entity(
             repre["name"],
