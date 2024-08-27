@@ -1519,9 +1519,14 @@ class PlaceholderLoadMixin(object):
         if "asset" in placeholder.data:
             return []
 
+        ### Starts Alkemy-X Override ###
+        # Not return early if there's no representation name given as
+        # that should be optional
+        representation_names = None
         representation_name = placeholder.data["representation"]
-        if not representation_name:
-            return []
+        if representation_name:
+            representation_names = [representation_name]
+        ### Ends Alkemy-X Override ###
 
         project_name = self.builder.project_name
         current_folder_entity = self.builder.current_folder_entity
@@ -1578,7 +1583,7 @@ class PlaceholderLoadMixin(object):
         )
         return list(get_representations(
             project_name,
-            representation_names={representation_name},
+            representation_names=representation_names,
             version_ids=version_ids
         ))
 
