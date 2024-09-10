@@ -20,13 +20,17 @@ class CreateExtraFoldersHierarchy(PreLaunchHook):
 
     Example:
         If we are launching shot `001_tst_020` on `dev_000` and we have only set
-        the `elements` subfolder on the settings, this hook should create the
+        the `elements` and `references` subfolders, this hook should create the
         following folders:
 
         /proj/dev_000/shots/elements
+        /proj/dev_000/shots/references
         /proj/dev_000/shots/001/elements
+        /proj/dev_000/shots/001/references
         /proj/dev_000/shots/001/tst/elements
+        /proj/dev_000/shots/001/tst/references
         /proj/dev_000/shots/001/tst/001_tst_020/elements
+        /proj/dev_000/shots/001/tst/001_tst_020/references
 
     """
 
