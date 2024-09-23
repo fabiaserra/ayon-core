@@ -5,6 +5,7 @@ import warnings
 import datetime
 from copy import deepcopy
 
+import attr
 import ayon_api
 import clique
 from ayon_core.lib import Logger
