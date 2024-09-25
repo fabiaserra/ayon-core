@@ -177,6 +177,10 @@ class ExtractReviewNuke(publish.Extractor):
             instance.data["deadlineSubmissionJobs"].append(response)
         else:
             instance.data["deadlineSubmissionJobs"] = [response]
+        
+        # Add output path to cleanupFullPaths so explicit clean plugin deletes
+        # it after it gets integrated
+        context.data["cleanupFullPaths"].append(output_path)
 
     def get_review_representations(self, instance):
         for repre in instance.data["representations"]:
