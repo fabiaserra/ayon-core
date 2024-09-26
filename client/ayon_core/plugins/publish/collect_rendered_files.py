@@ -101,16 +101,6 @@ class CollectRenderedFiles(pyblish.api.ContextPlugin):
                 instance_data.get("productName")
             )
 
-            ### Starts Alkemy-X Override ###
-            # Pick up clean up paths context so we can delete some files after integrate
-            # NOTE: this requires the change done at submit_publish_job.py:process that injects
-            # the cleanupFullPaths into the publish job dictionary
-            if "cleanupFullPaths" in data:
-                for path in data.get("cleanupFullPaths"):
-                    self.log.debug(f"Adding clean up path: {path}")
-                    instance.context.data["cleanupFullPaths"].append(path)
-            ### Ends Alkemy-X Override ###
-
             self._fill_staging_dir(instance_data, anatomy)
             instance.data.update(instance_data)
 
