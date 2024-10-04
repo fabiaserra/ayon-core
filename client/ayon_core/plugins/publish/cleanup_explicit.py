@@ -22,6 +22,14 @@ class ExplicitCleanUp(pyblish.api.ContextPlugin):
     active = True
 
     def process(self, context):
+        ### Starts Alkemy-X Override ###
+        # Skip cleaning up if dev mode enabled
+        from ayon_core.lib import is_dev_mode_enabled
+        if is_dev_mode_enabled():
+            self.log.debug("Skipping clean up explicit for DEV bundle")
+            return
+        ### Ends Alkemy-X Override ###
+
         cleanup_full_paths = context.data.get("cleanupFullPaths")
         cleanup_empty_dirs = context.data.get("cleanupEmptyDirs")
 
@@ -44,6 +52,18 @@ class ExplicitCleanUp(pyblish.api.ContextPlugin):
             # Skip empty items
             if not path:
                 continue
+                
+            ### Starts Alkemy-X Override ###
+            # Skip deleting .json paths for now as they are useful for
+            # debugging purposes
+            if path.endswith("json"):
+                self.log.info(
+                    "Skipping deleting file '%s' as it's helpful for debugging",
+                    path
+                )
+                continue
+            ### Ends Alkemy-X Override ###
+
             # Normalize path
             normalized = os.path.normpath(path)
             # Check if path exists
