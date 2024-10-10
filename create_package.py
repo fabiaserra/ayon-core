@@ -530,7 +530,6 @@ if __name__ == "__main__":
     main(
         args.output_dir,
         args.skip_zip,
-        args.keep_sources,
         args.clear_output_dir
     )
     ### Starts Alkemy-X Override ###
