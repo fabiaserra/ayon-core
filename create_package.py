@@ -527,11 +527,12 @@ if __name__ == "__main__":
     ### Ends Alkemy-X Override ###
 
     args = parser.parse_args(sys.argv[1:])
-    main(
-        args.output_dir,
-        args.skip_zip,
-        args.clear_output_dir
-    )
+    level = logging.INFO
+    if args.debug:
+        level = logging.DEBUG
+    logging.basicConfig(level=level)
+    main(args.output_dir, args.skip_zip, args.only_client)
+
     ### Starts Alkemy-X Override ###
     if args.upload and not args.skip_zip:
         if not has_ayon_api:
